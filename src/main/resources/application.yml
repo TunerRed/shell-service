@@ -72,5 +72,5 @@ token:
     iss: deploy49server
     # 过期时间，时间戳
     # expiresSecond: 259200
-    expiresSeconds: 10
+    expiresSeconds: 0
     expiresMinutes: 100

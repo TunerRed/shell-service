@@ -40,6 +40,6 @@ public class LoginController {
             //logger.debug("登录成功，用户："+username+" "+Base64Utils.decode(loginInfo.getVal().getBytes()));
             token = loginAuth.createToken(username);
         }
-        return new ResponseBuilder().putItem("token", token).getResponseEntity();
+        return new ResponseBuilder().putItem("token", token).putItem("expiration", loginAuth.getExpiration().getTime()).getResponseEntity();
     }
 }

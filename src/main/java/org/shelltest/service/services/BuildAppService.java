@@ -58,7 +58,7 @@ public class BuildAppService {
     }
 
     public void rollbackFrontend(ShellRunner remoteRunner, String serverIP, List<RollFrontDataDTO> rollbackList) throws MyException {
-        // todo 回滚后端实现
+        // todo 回滚前端未测试
         List<Property> serverInfoList = propertyService.getServerInfo(serverIP);
         History deployLog = createLogEntity(serverIP);
         logger.info("开始回滚："+serverIP);

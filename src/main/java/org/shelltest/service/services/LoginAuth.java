@@ -23,12 +23,23 @@ public class LoginAuth {
 
     Logger logger = LoggerFactory.getLogger(this.getClass());
 
+    Date expiration;
+
+    public Date getExpiration() {
+        return expiration;
+    }
+
+    public void setExpiration(Date expiration) {
+        this.expiration = expiration;
+    }
+
     public String createToken (String username) {
         long curSeconds = System.currentTimeMillis();
         long expiresMillSecond = (expiresMinutes * 60 + expiresSeconds) * 1000;
+        setExpiration(new Date(curSeconds + expiresMillSecond));
         JwtBuilder jwtBuilder = Jwts.builder().claim("loginTime",new Date(curSeconds)).setSubject(username)
                 .setIssuer(issUser).signWith(SignatureAlgorithm.HS512,secret)
-                .setExpiration(new Date(curSeconds + expiresMillSecond)).setNotBefore(new Date(curSeconds));
+                .setExpiration(getExpiration()).setNotBefore(new Date(curSeconds));
         logger.debug("用户[" + username + "]登录，token有效期：" + (expiresMillSecond/1000) + "秒");
         return jwtBuilder.compact();
     }
