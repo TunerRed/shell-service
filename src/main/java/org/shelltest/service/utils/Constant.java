@@ -1,5 +1,8 @@
 package org.shelltest.service.utils;
 
+/**
+ * 常量列表
+ * */
 public class Constant {
     public class ResultCode {
         public static final int
@@ -17,7 +20,6 @@ public class Constant {
             IP = "SERVER_IP",
             DEPLOY_PATH = "DEPLOY_PATH",
             BACKUP_PATH = "BACKUP_PATH",
-            GIT_PATH = "GIT_PATH",
             USERNAME = "SERVER_USER",
             PASSWORD = "SERVER_PASS";
     }

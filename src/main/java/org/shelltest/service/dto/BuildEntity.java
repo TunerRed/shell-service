@@ -1,4 +1,4 @@
-package org.shelltest.service.entity;
+package org.shelltest.service.dto;
 
 public class BuildEntity {
     public String getRepo() {

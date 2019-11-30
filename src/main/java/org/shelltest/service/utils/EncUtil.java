@@ -4,7 +4,10 @@ import org.springframework.util.Base64Utils;
 
 import java.io.UnsupportedEncodingException;
 
-public class BASE64Util {
+/**
+ * 加密和解密字符串
+ * */
+public class EncUtil {
     public static String encode(String origin) {
         return new String(Base64Utils.encode(origin.getBytes()));
     }

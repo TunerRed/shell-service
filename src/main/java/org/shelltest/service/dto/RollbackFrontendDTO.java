@@ -6,7 +6,7 @@ public class RollbackFrontendDTO {
 
     String serverIP;
 
-    List<RollFrontDataDTO> rollbackData;
+    List<RollbackFrontendEntity> rollbackData;
 
     public String getServerIP() {
         return serverIP;
@@ -16,11 +16,11 @@ public class RollbackFrontendDTO {
         this.serverIP = serverIP;
     }
 
-    public List<RollFrontDataDTO> getRollbackData() {
+    public List<RollbackFrontendEntity> getRollbackData() {
         return rollbackData;
     }
 
-    public void setRollbackData(List<RollFrontDataDTO> rollbackData) {
+    public void setRollbackData(List<RollbackFrontendEntity> rollbackData) {
         this.rollbackData = rollbackData;
     }
 }

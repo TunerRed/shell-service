@@ -1,14 +1,14 @@
 package org.shelltest.service.services;
 
 import org.jetbrains.annotations.NotNull;
-import org.shelltest.service.dto.RollFrontDataDTO;
-import org.shelltest.service.entity.BuildEntity;
+import org.shelltest.service.dto.RollbackFrontendEntity;
+import org.shelltest.service.dto.BuildEntity;
 import org.shelltest.service.entity.History;
 import org.shelltest.service.entity.Property;
 import org.shelltest.service.exception.MyException;
 import org.shelltest.service.mapper.HistoryMapper;
 import org.shelltest.service.utils.Constant;
-import org.shelltest.service.utils.DeployLog;
+import org.shelltest.service.utils.DeployLogUtil;
 import org.shelltest.service.utils.ShellRunner;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -16,7 +16,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
-import javax.servlet.http.HttpServletRequest;
 import java.util.Date;
 import java.util.List;
 
@@ -30,9 +29,7 @@ public class BuildAppService {
     @Autowired
     HistoryMapper historyMapper;
     @Autowired
-    HttpServletRequest request;
-    @Autowired
-    LoginAuth loginAuth;
+    DeployLogUtil deployUtil;
 
     @Value("${config.git.url}")
     String git_url;
@@ -45,39 +42,29 @@ public class BuildAppService {
 
     private Logger logger = LoggerFactory.getLogger(this.getClass());
 
-    public History createLogEntity(String serverIP) {
-        // 记录犯罪证据.jpg
-        History deployLog = new History();
-        deployLog.setIp(DeployLog.getRealIP(request));
-        deployLog.setTarget(serverIP);
-        deployLog.setUser(loginAuth.getUser(request.getHeader(Constant.RequestArg.Auth)));
-        // 从此时记录开始时间
-        deployLog.setStartTime(new Date());
 
-        return deployLog;
-    }
 
-    public void rollbackFrontend(ShellRunner remoteRunner, String serverIP, List<RollFrontDataDTO> rollbackList) throws MyException {
-        // todo 回滚前端未测试
-        List<Property> serverInfoList = propertyService.getServerInfo(serverIP);
-        History deployLog = createLogEntity(serverIP);
-        logger.info("开始回滚："+serverIP);
+    public void rollbackFrontend(ShellRunner remoteRunner, List<Property> serverInfoList, @NotNull List<RollbackFrontendEntity> rollbackList) throws MyException {
+        History deployLog = deployUtil.createLogEntity(serverInfoList.get(0).getKey());
+        logger.info("开始回滚："+deployLog.getTarget());
         StringBuffer deployResult = new StringBuffer();
         deployResult.append("部署类型：从备份回滚前端\n");
-        deployResult.append("目标服务器："+serverIP+"\n");
+        deployResult.append("目标服务器："+deployLog.getTarget()+"\n");
         deployResult.append("所有回滚：\n");
         for (int i = 0; i < rollbackList.size(); i++) {
-            RollFrontDataDTO dataDTO = rollbackList.get(i);
+            RollbackFrontendEntity dataDTO = rollbackList.get(i);
             // @param 2.备份父文件夹
             // @param 3.父文件夹下的以时间作名字的具体备份文件夹
             // @param 4.要部署到webapps文件夹底下的文件夹名，一般来讲与备份父文件夹同名，不排除需要自定义的场景
-            String tarDir = (dataDTO.getTarDir() == null || "".equalsIgnoreCase(dataDTO.getTarDir()))?dataDTO.getDir():dataDTO.getTarDir();
+            String tarDir = (dataDTO.getTarDir() == null || "".equalsIgnoreCase(dataDTO.getTarDir()))?dataDTO.getName():dataDTO.getTarDir();
+            String backupPath = propertyService.getPropertyValueByType(serverInfoList, Constant.PropertyType.BACKUP_PATH);
             if (remoteRunner.runCommand("sh RollbackFrontend.sh" +
-                    ShellRunner.appendArgs(new String[]{localGitPath, dataDTO.getDir(), dataDTO.getTarBackup(), tarDir}) )) {
-                deployResult.append("回滚["+dataDTO.getDir()+"/"+dataDTO.getTarBackup()+"]到【"+tarDir+"]成功\n");
+                    ShellRunner.appendArgs(new String[]{backupPath, dataDTO.getName(), dataDTO.getTarBackup(), tarDir}) )) {
+                deployResult.append("回滚["+dataDTO.getName()+"/"+dataDTO.getTarBackup()+"]到【"+tarDir+"】成功\n");
             } else {
-                deployResult.append("回滚["+dataDTO.getDir()+"/"+dataDTO.getTarBackup()+"]到【"+tarDir+"]异常\n");
+                deployResult.append("回滚["+dataDTO.getName()+"/"+dataDTO.getTarBackup()+"]到【"+tarDir+"】异常\n");
             }
+            deployResult.append("错误信息："+remoteRunner.getError());
         }
         //3.全工程clear，写日志到数据库
         deployLog.setEndTime(new Date());
@@ -89,7 +76,7 @@ public class BuildAppService {
     public void buildFrontendThread(ShellRunner localRunner, String serverIP, BuildEntity[] deployList) throws MyException {
         List<Property> serverInfoList = propertyService.getServerInfo(serverIP);
         // 记录犯罪证据.jpg
-        History deployLog = createLogEntity(serverIP);
+        History deployLog = deployUtil.createLogEntity(serverIP);
         new Thread(()->{
             StringBuffer deployResult = new StringBuffer();
             ShellRunner remoteRunner = null;

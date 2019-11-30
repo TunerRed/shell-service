@@ -22,8 +22,8 @@ public class LoginInterceptor implements HandlerInterceptor {
     LoginAuth loginAuth;
 
     /**
-     * 预处理回调方法，实现处理器的预处理
-     * 返回值：true表示继续流程；false表示流程中断，不会继续调用其他的拦截器或处理器
+     * 预处理回调方法，实现处理器的预处理.
+     * @return true表示继续流程；false表示流程中断，不会继续调用其他的拦截器或处理器
      */
     @Override
     public boolean preHandle(HttpServletRequest request, HttpServletResponse response, Object handler)

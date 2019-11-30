@@ -38,6 +38,6 @@ then
 fi
 
 mkdir $WEBAPPS_PATH/$RUNNING_app
-cp $BACKUP_PATH/* $WEBAPPS_PATH/$RUNNING_app/
+cp -r $BACKUP_PATH/* $WEBAPPS_PATH/$RUNNING_app/
 
 exit 0

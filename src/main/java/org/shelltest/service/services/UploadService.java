@@ -59,6 +59,14 @@ public class UploadService {
         return true;
     }
 
+    /**
+     * 上传多个文件至目标主机.
+     * 不包括文件夹
+     * @param shellRunner 远程连接
+     * @param localPath 文件在本地的存放路径
+     * @param remotePath 要上传的远程路径，空字符串表示上传到默认$HOME目录
+     * @param suffix 上传文件后缀，空字符串表示所有文件
+     * */
     public void uploadFiles (ShellRunner shellRunner, String localPath, String remotePath, String suffix) throws MyException {
         //SCPClient
         String[] uploadNameList = null;
@@ -87,6 +95,14 @@ public class UploadService {
             throw new MyException(Constant.ResultCode.INTERNAL_ERROR, "无法创建scp连接:"+e.getMessage());
         }
     }
+
+    /**
+     * 上传文件至目标主机.
+     * 不包括文件夹
+     * @param shellRunner 远程连接
+     * @param localFileWithPath 文件在本地的位置，包含文件自身
+     * @param remotePath 要上传的远程路径，空字符串表示上传到默认$HOME目录
+     * */
     public void uploadFile (ShellRunner shellRunner, String localFileWithPath, String remotePath) throws MyException {
         try {
             File fileName = new File(localFileWithPath);

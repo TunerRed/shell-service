@@ -16,12 +16,20 @@ public class PropertyService {
     @Autowired
     PropertyMapper propertyMapper;
 
+    /**
+     * 使用联合主键获取指定记录.
+     * */
     public Property getPropertyByKeys (String type, String key) {
         PropertyExample serverExample = new PropertyExample();
         serverExample.createCriteria().andTypeEqualTo(type).andKeyEqualTo(key);
         List<Property> list = propertyMapper.selectByExample(serverExample);
         return (list==null||list.size()==0)?null:list.get(0);
     }
+    /**
+     * 从服务器的一套配置中根据字段获取自己想要的配置.
+     * @param list 服务器配置
+     * @param type 需要的字段，如user/pass/*path
+     * */
     public String getPropertyValueByType(List<Property> list, String type) throws MyException {
         if (list == null || type == null)
             throw new MyException(Constant.ResultCode.NOT_FOUND,"服务器找不到任何配置");
@@ -31,6 +39,12 @@ public class PropertyService {
         }
         throw new MyException(Constant.ResultCode.NOT_FOUND,"服务器找不到对应配置："+type);
     }
+
+    /**
+     * 获取服务器信息.
+     * 返回目标主机的一套配置，一个ip对应一套配置，若一个ip有多个用途/账户，它们对应同一套配置
+     * @param serverIP 服务器地址
+     * */
     public List<Property> getServerInfo (String serverIP) throws MyException {
         PropertyExample serverExample = new PropertyExample();
         serverExample.createCriteria().andTypeEqualTo(Constant.PropertyType.IP).andValEqualTo(serverIP);

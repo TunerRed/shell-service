@@ -2,6 +2,8 @@ package org.shelltest.service.controller;
 
 import org.apache.ibatis.annotations.Param;
 import org.jetbrains.annotations.NotNull;
+import org.shelltest.service.dto.BackupEntity;
+import org.shelltest.service.dto.BuildEntity;
 import org.shelltest.service.dto.RollbackFrontendDTO;
 import org.shelltest.service.entity.*;
 import org.shelltest.service.exception.MyException;
@@ -48,6 +50,11 @@ public class FrontendController {
 
     private Logger logger = LoggerFactory.getLogger(this.getClass());
 
+    /**
+     * 获取所有前端服务器列表.
+     * 是否要对每个用户做可打包权限的控制？目前没有该想法（不难做，不想做）
+     * 一个ip只能有一套配置，即目前的架构无法完成同主机多账户部署
+     * */
     @PostMapping("/getServerList")
     public ResponseEntity getServerList() {
         PropertyExample example = new PropertyExample();
@@ -59,34 +66,49 @@ public class FrontendController {
         return new ResponseBuilder().putItem("list",list).getResponseEntity();
     }
 
-    @PostMapping("/getAvailBackup")
+    /**
+     * 获取目标主机上可用的历史备份.
+     * 备份根文件夹/应用名（webapps下文件夹名）/时间戳/index.html
+     * @param serverIP 目标主机
+     * */
+    @GetMapping("/getAvailBackup")
     public ResponseEntity  getAvailFrontendBackup(@Param("serverIP")  String serverIP) throws MyException {
-        // todo 待测试
         PropertyExample serverExample = new PropertyExample();
         serverExample.createCriteria().andKeyEqualTo(serverIP);
         List<Property> serverInfo = propertyMapper.selectByExample(serverExample);
-        String username = propertyService.getPropertyValueByType(serverInfo, Constant.PropertyType.USERNAME);
-        String password = propertyService.getPropertyValueByType(serverInfo, Constant.PropertyType.PASSWORD);
-        String deployPath = propertyService.getPropertyValueByType(serverInfo, Constant.PropertyType.BACKUP_PATH);
-        ShellRunner shellRunner = new ShellRunner(serverIP,username,password);
-        List<AvailBackup> availBackups = new ArrayList<>();
+        String backupPath = propertyService.getPropertyValueByType(serverInfo, Constant.PropertyType.BACKUP_PATH);
+        ShellRunner shellRunner = new ShellRunner(serverIP,
+                propertyService.getPropertyValueByType(serverInfo, Constant.PropertyType.USERNAME),
+                propertyService.getPropertyValueByType(serverInfo, Constant.PropertyType.PASSWORD));
+        List<BackupEntity> backupEntities = new ArrayList<>();
         shellRunner.login();
-        String shellname = "ListAvailBackup.sh";
-        uploadService.uploadScript(shellRunner, shellname,"frontend");
-        if (shellRunner.runCommand("sh "+shellname+" "+deployPath)) {
-            LinkedList<String> list = shellRunner.getResult();
-            int count = list.size();
-            for (int i = 0; i < count; i++) {
-                availBackups.add(new AvailBackup().setName(list.pop()));
+        // 列出备份目录下所有有备份文件夹
+        if (shellRunner.runCommand("ls -F "+backupPath)) {
+            List<String> availApps = shellRunner.getResult();
+            for (int i = 0; i < availApps.size(); i++) {
+                BackupEntity backupEntity = new BackupEntity();
+                backupEntity.setName(availApps.get(i).substring(0, availApps.get(i).length()-1));
+                // 列出每个应用下所有的可用备份（全部以时间戳作为文件夹名称）
+                if (shellRunner.runCommand("ls -F -r "+backupPath+"/"+availApps.get(i)+" | grep -E '*/$'")) {
+                    List<String> availBackups = shellRunner.getResult();
+                    // 是否存在类似js中的map方法，简化代码？
+                    for (int j = 0; j < availBackups.size(); j++)
+                        // 会多个斜杠，不影响，为了美观删除掉 [cd|ls /home/deploy] 和 [cd|ls /home//deploy] 效果相同
+                        availBackups.set(j, availBackups.get(j).substring(0, availBackups.get(j).length()-1));
+                    backupEntity.setList(availBackups);
+                }
+                backupEntities.add(backupEntity);
             }
-        }else {
-            logger.error(shellRunner.getError());
-            throw new MyException(Constant.ResultCode.SHELL_ERROR, "脚本执行错误");
+        } else {
+            throw new MyException(Constant.ResultCode.SHELL_ERROR, "服务器备份路径下没有应用");
         }
         shellRunner.exit();
-        return new ResponseBuilder().putItem("list",availBackups).getResponseEntity();
+        return new ResponseBuilder().setData(backupEntities).getResponseEntity();
     }
 
+    /**
+     * 获取前端仓库列表.
+     * */
     @PostMapping("/getRepoList")
     public ResponseEntity  getFrontendRepoList () throws MyException {
         ShellRunner localRunner = new ShellRunner(localURL,localUsername,localPassword);
@@ -109,6 +131,12 @@ public class FrontendController {
         return new ResponseBuilder().putItem("repoList",repositoryList).getResponseEntity();
     }
 
+    /**
+     * 获取前端可用脚本.
+     * 读取package.json获取npm run可以启动的、以build开始的脚本（忽略start/test等等）
+     * @param repo 仓库
+     * @param branch 分支。不同分支可用脚本可能不同
+     * */
     @GetMapping("/getNpmScripts")
     public ResponseEntity getAvailNpmScripts (String repo,String branch) throws MyException {
         Repo _repo = new Repo();
@@ -126,9 +154,13 @@ public class FrontendController {
         return new ResponseBuilder().setData(availNpmScript).getResponseEntity();
     }
 
+    /**
+     * 从git部署前端.
+     * @param buildBundle 打包信息，包含目标主机和要打的包
+     * @return 登录打包机器（本机）无问题后直接返回ok，剩下的打包工作在线程中执行
+     * */
     @PostMapping("/deployFromGit")
     public ResponseEntity deployFrontendFromGit(@Valid @RequestBody BuildDTO buildBundle) throws MyException {
-        // todo 封装起来后未测试，要打包的前端若正在打包检测冲突未测试
         // todo @Valid
         // 数据包DTO 原本不知道规范名称，所以起名为Bundle
         String serverIP = buildBundle.getServerIP();
@@ -147,19 +179,23 @@ public class FrontendController {
         return new ResponseBuilder().getResponseEntity();
     }
 
+    /**
+     * 回滚前端.
+     * @return 由于回滚比较快，所以不使用线程，执行成功后直接返回
+     * */
     @PostMapping("/rollback")
     public ResponseEntity rollbackFrontend(@NotNull @RequestBody RollbackFrontendDTO rollbackDto) throws MyException {
-        // todo 回滚未测试
         List<Property> serverInfoList = propertyService.getServerInfo(rollbackDto.getServerIP());
         if (serverInfoList == null)
             throw new MyException(Constant.ResultCode.NOT_FOUND,"找不到服务器对应配置");
+
         ShellRunner remoteRunner;
         remoteRunner = new ShellRunner(rollbackDto.getServerIP(),
                 propertyService.getPropertyValueByType(serverInfoList, Constant.PropertyType.USERNAME),
                 propertyService.getPropertyValueByType(serverInfoList,Constant.PropertyType.PASSWORD));
         remoteRunner.login();
-        uploadService.uploadScript(remoteRunner, "ListAvailBackup.sh", "frontend");
-        buildAppService.rollbackFrontend(remoteRunner, rollbackDto.getServerIP(), rollbackDto.getRollbackData());
+        uploadService.uploadScript(remoteRunner, "RollbackFrontend.sh", "frontend");
+        buildAppService.rollbackFrontend(remoteRunner, serverInfoList, rollbackDto.getRollbackData());
         return new ResponseBuilder().getResponseEntity();
     }
 }

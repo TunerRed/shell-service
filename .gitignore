@@ -1,5 +1,6 @@
 HELP.md
 target/
+shell/
 .mvn
 !.mvn/wrapper/maven-wrapper.jar
 !**/src/main/**

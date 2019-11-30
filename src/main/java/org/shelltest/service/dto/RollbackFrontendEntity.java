@@ -1,16 +1,16 @@
 package org.shelltest.service.dto;
 
-public class RollFrontDataDTO {
-    String dir;
+public class RollbackFrontendEntity {
+    String name;
     String tarBackup;
     String tarDir;
 
-    public String getDir() {
-        return dir;
+    public String getName() {
+        return name;
     }
 
-    public void setDir(String dir) {
-        this.dir = dir;
+    public void setName(String name) {
+        this.name = name;
     }
 
     public String getTarBackup() {

@@ -1,7 +1,6 @@
 package org.shelltest.service.dto;
 
 import org.jetbrains.annotations.NotNull;
-import org.shelltest.service.entity.BuildEntity;
 
 public class BuildDTO {
     public String getServerIP() {

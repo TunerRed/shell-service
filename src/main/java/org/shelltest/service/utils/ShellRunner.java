@@ -1,14 +1,11 @@
 package org.shelltest.service.utils;
 
-import ch.ethz.ssh2.ChannelCondition;
 import org.shelltest.service.exception.MyException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.*;
-import java.util.HashMap;
 import java.util.LinkedList;
-import java.util.Map;
 
 import ch.ethz.ssh2.Connection;
 import ch.ethz.ssh2.Session;
@@ -36,7 +33,8 @@ public class ShellRunner {
     public ShellRunner(String host, String username, String password) {
         this.host=host;
         this.username=username;
-        this.password=BASE64Util.decode(BASE64Util.decode(password));
+        this.password= EncUtil.decode(EncUtil.decode(password));
+        // logger.info("主机密码："+this.password);
         resultMsg=new LinkedList<>();
         errorMsg=new StringBuffer();
     }
@@ -84,6 +82,7 @@ public class ShellRunner {
     /**
      * 在远程桌面，执行命令并获取输出.
      * @param cmd 要执行的命令
+     * @param callback 可以传入一个回调函数，方法执行完毕时执行，一般都是在外面写好了，callback没用过
      * @return 命令是否执行成功
      * */
     private boolean runCommandImmadiately(String cmd, Callback callback) throws MyException {
@@ -113,6 +112,7 @@ public class ShellRunner {
             throw new MyException(Constant.ResultCode.INTERNAL_ERROR, "远程会话异常："+e.getMessage());
         } catch (NullPointerException e) {
             logger.error("空指针："+e.getMessage());
+            e.printStackTrace();
         } catch (Exception e) {
             logger.error("wdnmd ShellRunner又双叒叕意外的Exception");
             errorMsg.append("ShellRunner又双叒叕意外的Exception"+e.getMessage()+"\n");
@@ -139,9 +139,13 @@ public class ShellRunner {
      * @return  shell执行的输出信息
      * */
     public LinkedList<String> getResult() {
+        if (resultMsg == null)
+            return null;
         return (LinkedList<String>) resultMsg.clone();
     }
     public String[] getResultList() {
+        if (resultMsg == null)
+            return null;
         return resultMsg.toString().split("\n");
     }
 
@@ -157,6 +161,7 @@ public class ShellRunner {
 
     /**
      * 拼接参数的小工具.
+     * 有参数为空时直接报错并输出整个参数列表
      * @param args 命令参数
      * */
     public static String appendArgs(String[] args) throws MyException {
@@ -173,6 +178,10 @@ public class ShellRunner {
         return argsBuffer.toString();
     }
 
+    /**
+     * 执行命令是否成功.
+     * 如果脚本执行了exit 1，则判定为不成功
+     * */
     public boolean isSuccess() {
         return success;
     }

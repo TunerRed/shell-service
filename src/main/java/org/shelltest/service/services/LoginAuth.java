@@ -44,6 +44,10 @@ public class LoginAuth {
         return jwtBuilder.compact();
     }
 
+    /**
+     * 验证token是否有效.
+     * 检查是否过期以及是否含有有效用户名
+     * */
     public String verify (String token) throws LoginException {
         String username = null;
         try {
@@ -62,6 +66,12 @@ public class LoginAuth {
         return username;
     }
 
+    /**
+     * 从token获取用户名.
+     * 用于记录犯罪证据
+     * @param token 请求头Authorization字段信息
+     * @return 用户名
+     * */
     public String getUser(String token) {
         String username = "";
         try {
