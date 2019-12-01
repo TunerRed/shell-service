@@ -31,7 +31,7 @@ public class TestController {
     String localUsername;
     @Value("${local.password}")
     String localPassword;
-    @Value("${local.gitpath}")
+    @Value("${local.path.git}")
     String localGitPath;
 
     @Autowired

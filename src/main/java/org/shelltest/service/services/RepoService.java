@@ -23,11 +23,11 @@ public class RepoService {
     @Autowired
     BuildAppService buildAppService;
 
-    @Value("${local.gitpath}")
+    @Value("${local.path.git}")
     String GIT_path;
-    @Value("${config.git.username}")
+    @Value("${local.git.username}")
     String GIT_user;
-    @Value("${config.git.password}")
+    @Value("${local.git.password}")
     String GIT_pass;
 
     Logger logger = LoggerFactory.getLogger(this.getClass());

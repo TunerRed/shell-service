@@ -2,49 +2,46 @@ server:
   port: 33034
   servlet:
     context-path: /api
-    multipart:
-      # 上传文件总的最大值
-      max-request-size: 10MB
-      # 单个文件的最大值
-      max-file-size: 10MB
 
-config:
-  shellpath: shell
-  git:
-    url: https://github.com/Tunerred/
-    username: Tunerred
-    password: fake
-
-local:
-  url: localhost
-  username: test
-  password: jiami
-  gitpath: /home/yncs/git
-
-
-# email (use -D to set)
-##QQ smtp.qq.com
-##sina smtp.sina.cn
-##aliyun smtp.aliyun.com
-##163 smtp.163.com
-##126 smtp.126.com
-#spring:
-#  mail:
-#    host: smtp.126.com
-#    username: test@126.com
-#    password: test
-#    default-encoding: UTF-8
 spring:
   datasource:
     username: root
     password: password
     url: jdbc:mysql://localhost:3306/regulation?useUnicode=true&characterEncoding=utf-8&useSSL=true&serverTimezone=UTC
     driver-class-name: com.mysql.cj.jdbc.Driver
+  servlet:
+    multipart:
+      # 单个文件的最大值
+      max-file-size: 10MB
+      # 上传文件总的最大值
+      max-request-size: -1
 
+# ------------ 本机配置 ----------------
+# 使用-D设置的话其他用户会看到进程信息，请注意
+local:
+  # 将本机也视作一台远程主机，所以需要用户名密码
+  url: localhost
+  username: test
+  password: jiami
+  # 配置本地的一些路径
+  path:
+    shell: shell
+    git: /home/yncs/git
+    jar: /home/yncs/git/jar
+  # 每次git操作都需要授权时可能会用到，会使用expect脚本
+  # 考虑到效率等等，直接在服务器存储了用户名密码，建议在服务器新建账户
+  git:
+    url: https://github.com/Tunerred/
+    username: Tunerred
+    # 无论使用哪种方式，root账户都有办法看到密码（大概），还请注意
+    password: fake
+
+
+# ------------------ SQL ------------------
+# sql
 mybatis:
   mapper-locations: classpath:mapper/*.xml
   type-aliases-package: org.shelltest.service.entity
-
 #showSql
 logging:
   level:
@@ -52,17 +49,9 @@ logging:
       shelltest:
         service: debug
 
-# INFO ENDPOINT CONFIGURATION
-info:
-  app:
-    name: @project.name@
-    description: @project.description@
-    version: @project.version@
-    encoding: @project.build.sourceEncoding@
-    java:
-      version: @java.version@
 
 
+# ---------------- 加密 ----------------
 ##jwt配置
 token:
   config:
@@ -74,3 +63,17 @@ token:
     # expiresSecond: 259200
     expiresSeconds: 0
     expiresMinutes: 100
+
+
+
+
+# -------------- 忘了干嘛的了，应该是actuator -------------------
+# INFO ENDPOINT CONFIGURATION
+info:
+  app:
+    name: @project.name@
+    description: @project.description@
+    version: @project.version@
+    encoding: @project.build.sourceEncoding@
+    java:
+      version: @java.version@

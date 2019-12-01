@@ -17,7 +17,7 @@ import java.util.LinkedList;
 @Service
 public class UploadService {
     private Logger logger = LoggerFactory.getLogger(this.getClass());
-    @Value("${config.shellpath}")
+    @Value("${local.path.shell}")
     String BASE_PATH;
 
     /**
@@ -52,7 +52,7 @@ public class UploadService {
             writer.write(stringBuilder.toString().getBytes("utf-8"));
             writer.close();
         } catch (IOException e){
-            throw new MyException(Constant.ResultCode.INTERNAL_ERROR,"读取/写入脚本错误："+e.getMessage());
+            throw new MyException(Constant.ResultCode.INTERNAL_ERROR,"上传脚本错误："+e.getMessage());
         }
         uploadFile(shellRunner, shell, "");
         logger.info("脚本上传完成");

@@ -45,7 +45,7 @@ public class FrontendController {
     String localUsername;
     @Value("${local.password}")
     String localPassword;
-    @Value("${local.gitpath}")
+    @Value("${local.path.git}")
     String localGitPath;
 
     private Logger logger = LoggerFactory.getLogger(this.getClass());
@@ -55,7 +55,7 @@ public class FrontendController {
      * 是否要对每个用户做可打包权限的控制？目前没有该想法（不难做，不想做）
      * 一个ip只能有一套配置，即目前的架构无法完成同主机多账户部署
      * */
-    @PostMapping("/getServerList")
+    @GetMapping("/getServerList")
     public ResponseEntity getServerList() {
         PropertyExample example = new PropertyExample();
         example.setDistinct(true);
@@ -109,7 +109,7 @@ public class FrontendController {
     /**
      * 获取前端仓库列表.
      * */
-    @PostMapping("/getRepoList")
+    @GetMapping("/getRepoList")
     public ResponseEntity  getFrontendRepoList () throws MyException {
         ShellRunner localRunner = new ShellRunner(localURL,localUsername,localPassword);
         localRunner.login();
@@ -175,7 +175,7 @@ public class FrontendController {
         localRunner.runCommand("rm -r "+localGitPath+"/*.tar.gz");
         uploadService.uploadScript(localRunner, "BuildFrontend.sh", "frontend");
         // uploadService.uploadScript(localRunner, "LoginAuth.sh", "frontend/expect");
-        buildAppService.buildFrontendThread(localRunner, serverIP, deployList);
+        buildAppService.buildFrontendThread(localRunner, propertyService.getServerInfo(serverIP), deployList);
         return new ResponseBuilder().getResponseEntity();
     }
 

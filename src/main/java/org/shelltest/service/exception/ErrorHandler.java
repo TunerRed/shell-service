@@ -5,15 +5,20 @@ import org.shelltest.service.utils.ResponseBuilder;
 import org.shelltest.service.utils.ResponseEntity;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.web.bind.annotation.ControllerAdvice;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.ResponseBody;
+import org.springframework.web.multipart.MaxUploadSizeExceededException;
 
 @ControllerAdvice
 @ResponseBody
 public class ErrorHandler {
 
     Logger logger = LoggerFactory.getLogger(this.getClass());
+
+    @Value("${spring.servlet.multipart.max-file-size}")
+    String maxFileSize;
 
     @ExceptionHandler(value = Exception.class)
     public ResponseEntity errorHandler (Exception e) {
@@ -30,5 +35,10 @@ public class ErrorHandler {
     @ExceptionHandler(value = LoginException.class)
     public ResponseEntity errorHandler (LoginException e) {
         return new ResponseBuilder().setCode(e.getResultCode()).setMsg(e.getMessage()).getResponseEntity();
+    }
+
+    @ExceptionHandler(value = MaxUploadSizeExceededException.class)
+    public ResponseEntity errorHandler (MaxUploadSizeExceededException e) {
+        return new ResponseBuilder().setCode(Constant.ResultCode.FILE_EXCEED).setMsg("文件大小超出限制:"+maxFileSize).getResponseEntity();
     }
 }

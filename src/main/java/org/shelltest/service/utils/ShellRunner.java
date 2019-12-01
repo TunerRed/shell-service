@@ -1,5 +1,6 @@
 package org.shelltest.service.utils;
 
+import org.jetbrains.annotations.NotNull;
 import org.shelltest.service.exception.MyException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -30,7 +31,7 @@ public class ShellRunner {
 
     private Logger logger = LoggerFactory.getLogger(this.getClass());
 
-    public ShellRunner(String host, String username, String password) {
+    public ShellRunner(@NotNull String host,@NotNull String username,@NotNull String password) {
         this.host=host;
         this.username=username;
         this.password= EncUtil.decode(EncUtil.decode(password));

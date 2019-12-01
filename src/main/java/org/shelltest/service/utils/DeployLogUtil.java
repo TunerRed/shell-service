@@ -65,4 +65,8 @@ public class DeployLogUtil {
 
         return deployLog;
     }
+
+    public History createLogEntity(ShellRunner remoteRunner) {
+        return createLogEntity(remoteRunner.getConn().getHostname());
+    }
 }
