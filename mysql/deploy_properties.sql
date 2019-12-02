@@ -10,10 +10,8 @@ Target Server Type    : MYSQL
 Target Server Version : 80018
 File Encoding         : 65001
 
-Date: 2019-11-14 10:18:02
+Date: 2019-12-02 12:36:33
 */
-
-SET FOREIGN_KEY_CHECKS=0;
 
 -- ----------------------------
 -- Table structure for deploy_properties
@@ -29,9 +27,18 @@ CREATE TABLE `deploy_properties` (
 -- ----------------------------
 -- Records of deploy_properties
 -- ----------------------------
-INSERT INTO `deploy_properties` VALUES ('SERVER_IP', 'FRONTEND', '192.168.43.200', '1');
-INSERT INTO `deploy_properties` VALUES ('SERVER_USER', '192.168.43.200', 'root', null);
-INSERT INTO `deploy_properties` VALUES ('SERVER_PASS', '192.168.43.200', 'password', null);
-INSERT INTO `deploy_properties` VALUES ('DEPLOY_PATH', '192.168.43.200', 'ms/deploy', null);
-INSERT INTO `deploy_properties` VALUES ('BACKUP_PATH', '192.168.43.200', 'ms/backup', null);
-INSERT INTO `deploy_properties` VALUES ('LOGIN', '111', '222', null);
+INSERT INTO `deploy_properties` VALUES ('LOGIN', '111', 'TWpJeQ==', null);
+
+INSERT INTO `deploy_properties` VALUES ('SERVER_IP', 'FRONTEND', '192.168.0.200', '1');
+INSERT INTO `deploy_properties` VALUES ('SERVER_USER', '192.168.0.200', 'root', null);
+INSERT INTO `deploy_properties` VALUES ('SERVER_PASS', '192.168.0.200', 'password', null);
+INSERT INTO `deploy_properties` VALUES ('DEPLOY_PATH', '192.168.0.200', 'deploy', null);
+INSERT INTO `deploy_properties` VALUES ('BACKUP_PATH', '192.168.0.200', 'backup', null);
+
+INSERT INTO `deploy_properties` VALUES ('SERVER_IP', 'SERVICE', '192.168.0.121', '3');
+INSERT INTO `deploy_properties` VALUES ('SERVER_USER', '192.168.0.121', 'server', null);
+INSERT INTO `deploy_properties` VALUES ('SERVER_PASS', '192.168.0.121', 'password', null);
+INSERT INTO `deploy_properties` VALUES ('DEPLOY_PATH', '192.168.0.121', 'deploy', null);
+INSERT INTO `deploy_properties` VALUES ('BACKUP_PATH', '192.168.0.121', 'backup', null);
+INSERT INTO `deploy_properties` VALUES ('RUN_PATH', '192.168.0.121', 'running', null);
+INSERT INTO `deploy_properties` VALUES ('NOHUP_PATH', '192.168.0.121', 'log/nohup', null);

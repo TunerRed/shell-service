@@ -113,7 +113,6 @@ public class ServiceController {
         // todo 文件写入未测试，需要打成jar丢进Linux测试
         logger.info("/service/uploadServices");
         for (int i = 0; i < files.length; i++) {
-            logger.info(files[i].getOriginalFilename());
             if (files[i].isEmpty())
                 throw new MyException(Constant.ResultCode.ARGS_ERROR, "莫得文件内容:"+files[i].getOriginalFilename());
         }
@@ -135,6 +134,7 @@ public class ServiceController {
                 throw new MyException(Constant.ResultCode.FILE_EXCEED, "写文件失败，确认后端服务器有足够内存");
             }
         }
+        logger.info("文件全部上传完成："+jarPath+"/"+username);
         return new ResponseBuilder().getResponseEntity();
     }
 }
