@@ -51,7 +51,7 @@ public class CommonController {
 
     @GetMapping("/login")
     public ResponseEntity login (String username, String password) throws LoginException {
-        String token = null;
+        String token;
         if (username == null || password == null) {
             throw new LoginException("登录失败，请重新登录");
         }

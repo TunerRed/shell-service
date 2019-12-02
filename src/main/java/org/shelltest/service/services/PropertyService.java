@@ -30,7 +30,7 @@ public class PropertyService {
      * @param list 服务器配置
      * @param type 需要的字段，如user/pass/*path
      * */
-    public String getPropertyValueByType(List<Property> list, String type) throws MyException {
+    public String getValueByType(List<Property> list, String type) throws MyException {
         if (list == null || type == null)
             throw new MyException(Constant.ResultCode.NOT_FOUND,"服务器找不到任何配置");
         for (int i = 0; i < list.size(); i++) {

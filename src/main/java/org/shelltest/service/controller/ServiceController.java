@@ -90,16 +90,16 @@ public class ServiceController {
         logger.info("/service/deployFromFile");
         List<Property> serverInfoList = propertyService.getServerInfo(serverIP);
         ShellRunner remoteRunner = new ShellRunner(serverIP,
-                propertyService.getPropertyValueByType(serverInfoList, Constant.PropertyType.USERNAME),
-                propertyService.getPropertyValueByType(serverInfoList, Constant.PropertyType.PASSWORD));
+                propertyService.getValueByType(serverInfoList, Constant.PropertyType.USERNAME),
+                propertyService.getValueByType(serverInfoList, Constant.PropertyType.PASSWORD));
         remoteRunner.login();
         String username = loginAuth.getUser(request.getHeader(Constant.RequestArg.Auth));
         // 上传脚本，顺便也提前测试下空间有没有满
         uploadService.uploadScript(remoteRunner, "DeployService.sh", "service");
         uploadService.uploadScript(remoteRunner, "StartService.sh", "service");
         buildAppService.deployService(remoteRunner, jarPath+"/"+username,
-                propertyService.getPropertyValueByType(serverInfoList, Constant.PropertyType.DEPLOY_PATH),
-                propertyService.getPropertyValueByType(serverInfoList, Constant.PropertyType.RUN_PATH));
+                propertyService.getValueByType(serverInfoList, Constant.PropertyType.DEPLOY_PATH),
+                propertyService.getValueByType(serverInfoList, Constant.PropertyType.RUN_PATH));
         return new ResponseBuilder().getResponseEntity();
     }
 

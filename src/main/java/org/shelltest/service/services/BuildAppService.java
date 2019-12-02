@@ -101,7 +101,7 @@ public class BuildAppService {
             // @param 3.父文件夹下的以时间作名字的具体备份文件夹
             // @param 4.要部署到webapps文件夹底下的文件夹名，一般来讲与备份父文件夹同名，不排除需要自定义的场景
             String tarDir = (dataDTO.getTarDir() == null || "".equalsIgnoreCase(dataDTO.getTarDir()))?dataDTO.getName():dataDTO.getTarDir();
-            String backupPath = propertyService.getPropertyValueByType(serverInfoList, Constant.PropertyType.BACKUP_PATH);
+            String backupPath = propertyService.getValueByType(serverInfoList, Constant.PropertyType.BACKUP_PATH);
             if (remoteRunner.runCommand("sh RollbackFrontend.sh" +
                     ShellRunner.appendArgs(new String[]{backupPath, dataDTO.getName(), dataDTO.getTarBackup(), tarDir}) )) {
                 deployResult.append("回滚["+dataDTO.getName()+"/"+dataDTO.getTarBackup()+"]到【"+tarDir+"】成功\n");
@@ -151,18 +151,18 @@ public class BuildAppService {
 
                 //1.整理打包结果
                 //确认可以登录远程服务器
-                remoteRunner = new ShellRunner(deployLog.getTarget(), propertyService.getPropertyValueByType(serverInfoList, Constant.PropertyType.USERNAME),
-                        propertyService.getPropertyValueByType(serverInfoList,Constant.PropertyType.PASSWORD));
+                remoteRunner = new ShellRunner(deployLog.getTarget(), propertyService.getValueByType(serverInfoList, Constant.PropertyType.USERNAME),
+                        propertyService.getValueByType(serverInfoList,Constant.PropertyType.PASSWORD));
                 remoteRunner.login();
                 //打包完成，上传包到远程服务器
                 uploadService.uploadFiles(remoteRunner, localGitPath,
-                        propertyService.getPropertyValueByType(propertyService.getServerInfo(deployLog.getTarget()),Constant.PropertyType.DEPLOY_PATH),"tar.gz");
+                        propertyService.getValueByType(propertyService.getServerInfo(deployLog.getTarget()),Constant.PropertyType.DEPLOY_PATH),"tar.gz");
                 //上传完成，在远程服务器进行部署
                 uploadService.uploadScript(remoteRunner, "DeployFrontend.sh", "frontend");
                 //2.整理部署结果
                 String args = ShellRunner.appendArgs(new String[]{
-                        propertyService.getPropertyValueByType(serverInfoList,Constant.PropertyType.DEPLOY_PATH),
-                        propertyService.getPropertyValueByType(serverInfoList,Constant.PropertyType.BACKUP_PATH)});
+                        propertyService.getValueByType(serverInfoList,Constant.PropertyType.DEPLOY_PATH),
+                        propertyService.getValueByType(serverInfoList,Constant.PropertyType.BACKUP_PATH)});
                 if (remoteRunner.runCommand("sh DeployFrontend.sh"+args)) {
                     deployResult.append("部署成功 ");
                 } else {

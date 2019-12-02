@@ -1,5 +1,6 @@
 package org.shelltest.service.utils;
 
+import ch.ethz.ssh2.ChannelCondition;
 import org.jetbrains.annotations.NotNull;
 import org.shelltest.service.exception.MyException;
 import org.slf4j.Logger;
@@ -28,6 +29,9 @@ public class ShellRunner {
     private Connection conn = null;
     private LinkedList<String> resultMsg;
     private StringBuffer errorMsg;
+
+    // 命令超时时间
+    private static final long TIME_OUT = 1000 * 60 * 30;
 
     private Logger logger = LoggerFactory.getLogger(this.getClass());
 
@@ -73,6 +77,7 @@ public class ShellRunner {
                 conn.close();
                 conn = null;
                 logger.info("退出登录");
+                logger.info("--------------------------");
             } catch (Exception e){
                 logger.error("退出登录失败:"+e.getMessage());
                 throw new MyException(Constant.ResultCode.LOGIN_FAILED, "远程退出失败？");
@@ -106,8 +111,10 @@ public class ShellRunner {
                 logger.error(line);
                 errorMsg.append(line+"\n");
             }
-            // logger.debug("脚本执行完成");
-            success = (session.getExitStatus() == 0);
+            // 获取ExitStatus前似乎要先wait.
+            session.waitForCondition(ChannelCondition.EXIT_STATUS|ChannelCondition.CLOSED|ChannelCondition.EOF, TIME_OUT);
+            // 脚本如果没有写exit 0则会返回null
+            success = (session.getExitStatus() == null || session.getExitStatus() == 0);
         } catch (IOException e) {
             logger.error("Session执行失败" + e.getMessage());
             throw new MyException(Constant.ResultCode.INTERNAL_ERROR, "远程会话异常："+e.getMessage());

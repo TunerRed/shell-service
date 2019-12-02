@@ -20,7 +20,6 @@ import org.slf4j.LoggerFactory;
 
 import javax.validation.Valid;
 import java.util.ArrayList;
-import java.util.LinkedList;
 import java.util.List;
 
 @RestController
@@ -76,10 +75,10 @@ public class FrontendController {
         PropertyExample serverExample = new PropertyExample();
         serverExample.createCriteria().andKeyEqualTo(serverIP);
         List<Property> serverInfo = propertyMapper.selectByExample(serverExample);
-        String backupPath = propertyService.getPropertyValueByType(serverInfo, Constant.PropertyType.BACKUP_PATH);
+        String backupPath = propertyService.getValueByType(serverInfo, Constant.PropertyType.BACKUP_PATH);
         ShellRunner shellRunner = new ShellRunner(serverIP,
-                propertyService.getPropertyValueByType(serverInfo, Constant.PropertyType.USERNAME),
-                propertyService.getPropertyValueByType(serverInfo, Constant.PropertyType.PASSWORD));
+                propertyService.getValueByType(serverInfo, Constant.PropertyType.USERNAME),
+                propertyService.getValueByType(serverInfo, Constant.PropertyType.PASSWORD));
         List<BackupEntity> backupEntities = new ArrayList<>();
         shellRunner.login();
         // 列出备份目录下所有有备份文件夹
@@ -99,10 +98,10 @@ public class FrontendController {
                 }
                 backupEntities.add(backupEntity);
             }
+            shellRunner.exit();
         } else {
-            throw new MyException(Constant.ResultCode.SHELL_ERROR, "服务器备份路径下没有应用");
+            throw new MyException(Constant.ResultCode.NOT_FOUND, "服务器备份路径下没有应用");
         }
-        shellRunner.exit();
         return new ResponseBuilder().setData(backupEntities).getResponseEntity();
     }
 
@@ -126,7 +125,7 @@ public class FrontendController {
             repositoryList.get(i).setDeploy(false);
         }
         localRunner.runCommand("rm -f ListAvailBranch.sh");
-        // localRunner.exit();
+        localRunner.exit();
         logger.info("查找git分支完成");
         return new ResponseBuilder().putItem("repoList",repositoryList).getResponseEntity();
     }
@@ -149,7 +148,7 @@ public class FrontendController {
         List<String> availNpmScript = repoService.getAvailNpmScript(localRunner,_repo,branch);
         localRunner.runCommand("rm -f GitCheckout.sh");
         localRunner.runCommand("rm -f ListAvailScript.sh");
-        // localRunner.exit();
+        localRunner.exit();
         logger.info("已获取全部分支");
         return new ResponseBuilder().setData(availNpmScript).getResponseEntity();
     }
@@ -191,8 +190,8 @@ public class FrontendController {
 
         ShellRunner remoteRunner;
         remoteRunner = new ShellRunner(rollbackDto.getServerIP(),
-                propertyService.getPropertyValueByType(serverInfoList, Constant.PropertyType.USERNAME),
-                propertyService.getPropertyValueByType(serverInfoList,Constant.PropertyType.PASSWORD));
+                propertyService.getValueByType(serverInfoList, Constant.PropertyType.USERNAME),
+                propertyService.getValueByType(serverInfoList,Constant.PropertyType.PASSWORD));
         remoteRunner.login();
         uploadService.uploadScript(remoteRunner, "RollbackFrontend.sh", "frontend");
         buildAppService.rollbackFrontend(remoteRunner, serverInfoList, rollbackDto.getRollbackData());
