@@ -69,11 +69,11 @@ token:
 
 # -------------- 忘了干嘛的了，应该是actuator -------------------
 # INFO ENDPOINT CONFIGURATION
-info:
-  app:
-    name: @project.name@
-    description: @project.description@
-    version: @project.version@
-    encoding: @project.build.sourceEncoding@
-    java:
-      version: @java.version@
+#info:
+#  app:
+#    name: @project.name@
+#    description: @project.description@
+#    version: @project.version@
+#    encoding: @project.build.sourceEncoding@
+#    java:
+#      version: @java.version@

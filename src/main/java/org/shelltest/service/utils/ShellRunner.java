@@ -97,7 +97,7 @@ public class ShellRunner {
             session.execCommand(cmd);
             BufferedReader stdoutReader = new BufferedReader(new InputStreamReader(new StreamGobbler(session.getStdout()),"UTF-8"));
             BufferedReader stderrReader = new BufferedReader(new InputStreamReader(new StreamGobbler(session.getStderr()),"UTF-8"));
-            String line=null;
+            String line;
             while ((line=stdoutReader.readLine())!=null) {
                 logger.info(line);
                 resultMsg.add(line);
