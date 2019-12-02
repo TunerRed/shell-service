@@ -13,8 +13,6 @@ File Encoding         : 65001
 Date: 2019-11-14 10:18:09
 */
 
-SET FOREIGN_KEY_CHECKS=0;
-
 -- ----------------------------
 -- Table structure for deploy_repository
 -- ----------------------------

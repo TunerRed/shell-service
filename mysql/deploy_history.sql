@@ -13,8 +13,6 @@ File Encoding         : 65001
 Date: 2019-11-24 03:44:59
 */
 
-SET FOREIGN_KEY_CHECKS=0;
-
 -- ----------------------------
 -- Table structure for deploy_history
 -- ----------------------------
