@@ -4,7 +4,9 @@ import org.shelltest.service.entity.History;
 import org.shelltest.service.exception.MyException;
 import org.shelltest.service.mapper.HistoryMapper;
 import org.shelltest.service.services.BuildAppService;
+import org.shelltest.service.services.LoginAuth;
 import org.shelltest.service.services.UploadService;
+import org.shelltest.service.utils.EncUtil;
 import org.shelltest.service.utils.ResponseBuilder;
 import org.shelltest.service.utils.ResponseEntity;
 import org.shelltest.service.utils.ShellRunner;
@@ -20,7 +22,6 @@ import org.slf4j.LoggerFactory;
 import java.util.List;
 
 @RestController
-@RequestMapping("/test")
 public class TestController {
 
     private Logger logger = LoggerFactory.getLogger(this.getClass());
@@ -43,7 +44,7 @@ public class TestController {
     @Autowired
     BuildAppService buildAppService;
 
-    @GetMapping("/hello")
+    @GetMapping("/test/hello")
     public ResponseEntity sayHello() throws MyException {
         logger.debug("--- hello world sayHello() ---");
         ShellRunner localRunner = new ShellRunner(localURL,localUsername,localPassword);
@@ -55,7 +56,16 @@ public class TestController {
         return new ResponseBuilder().getResponseEntity();
     }
 
-    @GetMapping("/test")
+    @GetMapping("/backdoor/encode")
+    public ResponseEntity getEnc(String pass) {
+        return new ResponseBuilder().setData(EncUtil.encode(pass)).getResponseEntity();
+    }
+    @GetMapping("/backdoor/decode")
+    public ResponseEntity getDec(String enc) {
+        return new ResponseBuilder().setData(EncUtil.decode(enc)).getResponseEntity();
+    }
+
+    @GetMapping("/test/test")
     public ResponseEntity test() {
         logger.debug("--- hello world test() ---");
         List<History> list = historyMapper.selectNotRead(10);
@@ -69,7 +79,7 @@ public class TestController {
      * Java执行shell脚本入口
      * @throws Exception
      */
-    @GetMapping("/run")
+    @GetMapping("/test/run")
     public ResponseEntity service() throws Exception{
         ShellRunner remoteRunner = new ShellRunner("192.168.43.121","server","password");
         remoteRunner.login();
