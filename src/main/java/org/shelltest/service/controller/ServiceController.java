@@ -18,7 +18,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
-import org.springframework.web.multipart.MultipartHttpServletRequest;
 
 import javax.servlet.http.HttpServletRequest;
 import java.io.File;
@@ -110,7 +109,6 @@ public class ServiceController {
      * */
     @PostMapping("/uploadServices")
     public ResponseEntity uploadServiceJars(@RequestParam("file") MultipartFile[] files) throws MyException {
-        // todo 文件写入未测试，需要打成jar丢进Linux测试
         logger.info("/service/uploadServices");
         for (int i = 0; i < files.length; i++) {
             if (files[i].isEmpty())

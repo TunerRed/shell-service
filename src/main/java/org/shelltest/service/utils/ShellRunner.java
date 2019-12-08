@@ -15,8 +15,6 @@ import ch.ethz.ssh2.StreamGobbler;
 
 /**
  * 运行脚本的工具类，包括登录和退出.
- * 同一个账户可以多次登录，但是同一时刻只能运行一个持续性的脚本（Thread）
- * 并且，一次登录在执行了持续性脚本后，只有等到脚本结束才能执行其他指令
  * @author codev
  * */
 public class ShellRunner {

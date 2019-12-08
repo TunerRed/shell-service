@@ -61,7 +61,6 @@ public class BuildAppService {
             deployResult.append("上传所有jar包成功\n");
             // todo 写脚本，拼接脚本参数
             // 可用的脚本在云内放着，到时候再看着简化一下写在这里
-            // todo 预计要再使用一张表存储不同服务器上的启动配置
             if (remoteRunner.runCommand("sh DeployService.sh"+ShellRunner.appendArgs(new String[]{}))) {
                 deployResult.append("部署成功\n");
             } else {
