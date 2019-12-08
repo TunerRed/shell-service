@@ -44,7 +44,8 @@
         <!--生成对应表及类名，始终添加 "`" 符号-->
         <!-- tableName="deploy_properties"  domainObjectName="Property" delimitAllColumns="true"></table>
         <table tableName="deploy_repository"  domainObjectName="Repo" delimitAllColumns="true"></table-->
-        <table tableName="deploy_history"  domainObjectName="History" delimitAllColumns="true"></table>
+        <!--table tableName="deploy_history"  domainObjectName="History" delimitAllColumns="true"></table-->
+        <table tableName="deploy_service_args"  domainObjectName="ServiceArgs" delimitAllColumns="true"></table>
 
     </context>
 

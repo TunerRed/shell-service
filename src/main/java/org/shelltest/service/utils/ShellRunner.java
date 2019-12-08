@@ -145,7 +145,7 @@ public class ShellRunner {
      * @return  shell执行的输出信息
      * */
     public LinkedList<String> getResult() {
-        if (resultMsg == null)
+        if (resultMsg == null || resultMsg.size() == 0)
             return null;
         return (LinkedList<String>) resultMsg.clone();
     }

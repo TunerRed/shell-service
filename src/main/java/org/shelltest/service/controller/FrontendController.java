@@ -144,7 +144,7 @@ public class FrontendController {
         ShellRunner localRunner = new ShellRunner(localURL,localUsername,localPassword);
         localRunner.login();
         uploadService.uploadScript(localRunner,"GitCheckout.sh","git");
-        uploadService.uploadScript(localRunner,"ListAvailScript.sh",null);
+        uploadService.uploadScript(localRunner,"ListAvailScript.sh","frontend");
         List<String> availNpmScript = repoService.getAvailNpmScript(localRunner,_repo,branch);
         localRunner.runCommand("rm -f GitCheckout.sh");
         localRunner.runCommand("rm -f ListAvailScript.sh");

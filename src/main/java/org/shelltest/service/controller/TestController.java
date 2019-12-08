@@ -3,6 +3,7 @@ package org.shelltest.service.controller;
 import org.shelltest.service.entity.History;
 import org.shelltest.service.exception.MyException;
 import org.shelltest.service.mapper.HistoryMapper;
+import org.shelltest.service.mapper.ServiceArgsMapper;
 import org.shelltest.service.services.BuildAppService;
 import org.shelltest.service.services.LoginAuth;
 import org.shelltest.service.services.UploadService;
@@ -43,26 +44,24 @@ public class TestController {
 
     @Autowired
     BuildAppService buildAppService;
+    @Autowired
+    ServiceArgsMapper serviceArgsMapper;
 
     @GetMapping("/test/hello")
     public ResponseEntity sayHello() throws MyException {
         logger.debug("--- hello world sayHello() ---");
-        ShellRunner localRunner = new ShellRunner(localURL,localUsername,localPassword);
-        localRunner.login();
-        uploadService.uploadScript(localRunner, "imshell.sh", null);
-        logger.debug("测试 运行中");
-        localRunner.runCommand("sh imshell.sh",null);
-        logger.debug("测试 运行完成");
-        return new ResponseBuilder().getResponseEntity();
+        List<String> list = serviceArgsMapper.getArgsWithDefault("192.168.0.2", "eureka");
+        return new ResponseBuilder().setData(String.join(" ", list)).getResponseEntity();
     }
 
     @GetMapping("/backdoor/encode")
     public ResponseEntity getEnc(String pass) {
-        return new ResponseBuilder().setData(EncUtil.encode(pass)).getResponseEntity();
+        return new ResponseBuilder().setData(EncUtil.encode(EncUtil.encode(pass))).getResponseEntity();
     }
     @GetMapping("/backdoor/decode")
     public ResponseEntity getDec(String enc) {
-        return new ResponseBuilder().setData(EncUtil.decode(enc)).getResponseEntity();
+        // .setData(EncUtil.decode(EncUtil.decode(enc)))
+        return new ResponseBuilder().getResponseEntity();
     }
 
     @GetMapping("/test/test")

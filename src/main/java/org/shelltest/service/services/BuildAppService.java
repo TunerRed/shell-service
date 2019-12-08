@@ -7,6 +7,7 @@ import org.shelltest.service.entity.History;
 import org.shelltest.service.entity.Property;
 import org.shelltest.service.exception.MyException;
 import org.shelltest.service.mapper.HistoryMapper;
+import org.shelltest.service.mapper.ServiceArgsMapper;
 import org.shelltest.service.utils.Constant;
 import org.shelltest.service.utils.DeployLogUtil;
 import org.shelltest.service.utils.ShellRunner;
@@ -27,7 +28,12 @@ public class BuildAppService {
     @Autowired
     PropertyService propertyService;
     @Autowired
+    StartAppService startAppService;
+
+    @Autowired
     HistoryMapper historyMapper;
+    @Autowired
+    ServiceArgsMapper serviceArgsMapper;
     @Autowired
     DeployLogUtil deployUtil;
 
@@ -57,19 +63,38 @@ public class BuildAppService {
         deployResult.append("部署类型：从文件部署后端\n");
         deployResult.append("目标服务器："+deployLog.getTarget()+"\n");
         try {
-            uploadService.uploadFiles(remoteRunner, localPath, deployPath, "jar");
+            /**
+             * 上传文件，并获取文件列表
+             * 适用情况：所有jar包都在同一目录下.
+             * 当各有目录时，应当使用for循环依次上传，数据库表也会有改动
+             * 同时因为多次调用scp，性能可能也会下降
+             * 此处默认所有jar都在同一目录下，视各自情况改动代码、添加path字段等等
+             * */
+            String[] services = uploadService.uploadFiles(remoteRunner, localPath, deployPath, "jar");
             deployResult.append("上传所有jar包成功\n");
-            // todo 写脚本，拼接脚本参数
-            // 可用的脚本在云内放着，到时候再看着简化一下写在这里
+            // TODO 脚本未测试
             if (remoteRunner.runCommand("sh DeployService.sh"+ShellRunner.appendArgs(new String[]{}))) {
-                deployResult.append("部署成功\n");
+                deployResult.append("上传至远程服务器成功\n");
+                // todo 把eureka和config放在前边启动
+                for (int i = 0; i < services.length; i++) {
+                    services[i] = services[i].substring(0, services[i].lastIndexOf(".jar"));
+                    // 可行性前提：多次使用-D指定同一个属性，以最后指定的为准
+                    String serviceArgs =
+                            String.join(" ", serviceArgsMapper.getArgsWithDefault(deployLog.getTarget(), services[i]));
+                    // 启动进程
+                    startAppService.killService(remoteRunner, services[i]);
+                    startAppService.startService(remoteRunner, runPath, services[i], serviceArgs);
+                    deployResult.append("服务启动成功："+services[i]+"\n");
+                    logger.info("服务启动成功"+services[i]);
+                    logger.info("服务启动参数\n"+serviceArgs);
+                }
             } else {
-                deployResult.append("部署脚本执行异常\n");
+                deployResult.append("上传至远程服务器异常\n");
             }
             deployResult.append("错误信息：\n"+remoteRunner.getError());
         } catch (MyException e) {
             deployResult.append("部署错误："+e.getMessage());
-            e.printStackTrace();
+            logger.error(e.getMessage());
         } catch (Exception e) {
             deployResult.append("意外的Exception"+e.getMessage());
             e.printStackTrace();
@@ -79,6 +104,11 @@ public class BuildAppService {
                 remoteRunner.runCommand("rm -f StartService.sh");
                 remoteRunner.exit();
             } catch (MyException e){e.printStackTrace();}
+            //3.全工程clear，写日志到数据库
+            deployLog.setEndTime(new Date());
+            deployLog.setResult(deployResult.toString());
+            historyMapper.insertSelective(deployLog);
+            deployResult.append("--- 回滚完成，已存储记录 ---");
         }
     }
 

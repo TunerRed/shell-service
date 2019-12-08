@@ -34,15 +34,13 @@ public class UploadService {
         ClassPathResource resource = new ClassPathResource(shell);
         StringBuilder stringBuilder = new StringBuilder();
         try {
-            if (resource == null || resource.getInputStream() == null) {
+            if (resource == null || resource.getInputStream() == null)
                 throw new MyException(Constant.ResultCode.INTERNAL_ERROR,"Script cannot be found:"+shell);
-            }
             BufferedReader bufferedReader =
                     new BufferedReader(new InputStreamReader(resource.getInputStream()));
             String sbReadLine;
-            while ((sbReadLine=bufferedReader.readLine())!=null){
+            while ((sbReadLine=bufferedReader.readLine())!=null)
                 stringBuilder.append(sbReadLine+" \n");
-            }
             File scriptFile = new File(shell);
             if (!scriptFile.exists()) {
                 new File(scriptFile.getParent()).mkdirs();
@@ -55,7 +53,7 @@ public class UploadService {
             throw new MyException(Constant.ResultCode.INTERNAL_ERROR,"上传脚本错误："+e.getMessage());
         }
         uploadFile(shellRunner, shell, "");
-        logger.info("脚本上传完成");
+        logger.debug("脚本上传完成");
         return true;
     }
 
@@ -66,10 +64,10 @@ public class UploadService {
      * @param localPath 文件在本地的存放路径
      * @param remotePath 要上传的远程路径，空字符串表示上传到默认$HOME目录
      * @param suffix 上传文件后缀，空字符串表示所有文件
+     * @return 上传的文件列表
      * */
-    public void uploadFiles (ShellRunner shellRunner, String localPath, String remotePath, String suffix) throws MyException {
-        //SCPClient
-        String[] uploadNameList = null;
+    public String[] uploadFiles (ShellRunner shellRunner, String localPath, String remotePath, String suffix) throws MyException {
+        String[] uploadNameList;
         try {
             File filePath = new File(localPath);
             if (filePath.canRead() && filePath.isDirectory()) {
@@ -86,14 +84,15 @@ public class UploadService {
                 uploadNameList = new String[targetFiles.size()];
                 targetFiles.toArray(uploadNameList);
             } else {
-                throw new MyException(Constant.ResultCode.NOT_FOUND, "不可操作的本地目录:"+localPath);
+                throw new MyException(Constant.ResultCode.INTERNAL_ERROR, "异常:不可操作的本地目录:"+localPath);
             }
             SCPClient scpClient = shellRunner.getConn().createSCPClient();
             scpClient.put(uploadNameList,remotePath);
             logger.info("文件上传完成");
         } catch (IOException e) {
-            throw new MyException(Constant.ResultCode.INTERNAL_ERROR, "无法创建scp连接:"+e.getMessage());
+            throw new MyException(Constant.ResultCode.LOGIN_FAILED, "无法创建scp连接:"+e.getMessage());
         }
+        return uploadNameList;
     }
 
     /**

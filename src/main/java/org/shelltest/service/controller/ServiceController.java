@@ -121,7 +121,6 @@ public class ServiceController {
         // 用户一对一专属部署文件夹，发生冲突说明你被盗号了
         shellRunner.runCommand("rm -rf "+jarPath+"/"+username);
         shellRunner.runCommand("mkdir -p "+jarPath+"/"+username);
-        shellRunner.exit();
         for (int i = 0; i < files.length; i++) {
             File dest = new File(jarPath+"/"+username+"/"+files[i].getOriginalFilename());
             try {
@@ -132,7 +131,12 @@ public class ServiceController {
                 throw new MyException(Constant.ResultCode.FILE_EXCEED, "写文件失败，确认后端服务器有足够内存");
             }
         }
-        logger.info("文件全部上传完成："+jarPath+"/"+username);
+        logger.info("文件已上传至："+jarPath+"/"+username);
+        uploadService.uploadScript(shellRunner, "rename.sh", "service");
+        shellRunner.runCommand("sh rename.sh");
+        shellRunner.exit();
+        logger.info("文件重命名完成");
+        logger.info("文件上传结束");
         return new ResponseBuilder().getResponseEntity();
     }
 }
