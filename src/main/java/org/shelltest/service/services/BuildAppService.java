@@ -76,6 +76,10 @@ public class BuildAppService {
             if (remoteRunner.runCommand("sh DeployService.sh"+ShellRunner.appendArgs(new String[]{}))) {
                 deployResult.append("上传至远程服务器成功\n");
                 // todo 把eureka和config放在前边启动
+                // config放第二个，eureka放第一个，若第一个不是eureka且第二个是config，第一第二交换
+                for (int i = 0; i < services.length; i++) {
+
+                }
                 for (int i = 0; i < services.length; i++) {
                     services[i] = services[i].substring(0, services[i].lastIndexOf(".jar"));
                     // 可行性前提：多次使用-D指定同一个属性，以最后指定的为准

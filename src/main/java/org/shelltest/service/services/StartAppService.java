@@ -9,12 +9,17 @@ import org.springframework.stereotype.Service;
  * */
 @Service
 public class StartAppService {
-    // todo 启动脚本需要tail日志，启动脚本+grep脚本
     public void startService(ShellRunner remoteRunner, String path, String filename, String args) throws MyException {
         // args加单引号防止只读取到一个-D，未测试
         remoteRunner.runCommand("sh StartService.sh" + path + " " + filename + " '"+args+"'");
     }
 
+    /**
+     * 杀死指定的进程.
+     * @param remoteRunner 远程连接
+     * @param filename jar包名，不含后缀，不含时间戳
+     * @return 是否有正在运行的进程
+     * */
     public boolean killService(ShellRunner remoteRunner, String filename) throws MyException {
         /**
          * 需要先杀该应用进程的根本原因是端口占用
