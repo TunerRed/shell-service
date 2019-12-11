@@ -195,6 +195,8 @@ public class FrontendController {
         remoteRunner.login();
         uploadService.uploadScript(remoteRunner, "RollbackFrontend.sh", "frontend");
         buildAppService.rollbackFrontend(remoteRunner, serverInfoList, rollbackDto.getRollbackData());
+        remoteRunner.runCommand("rm -f RollbackFrontend.sh");
+        remoteRunner.exit();
         return new ResponseBuilder().getResponseEntity();
     }
 }

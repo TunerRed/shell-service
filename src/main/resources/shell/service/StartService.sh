@@ -18,13 +18,15 @@ if [ ! -e $APP_path/$APP_file ] ; then
   exit 1
 fi 
 
-nohup java -jar $APP_args $APP_path/$APP_file >$APP_file.log 2>&1 &
+CMD="nohup java -jar $APP_args $APP_path/$APP_file >$APP_file.log 2>&1 &"
+#echo "$CMD"
+eval "$CMD"
 
 tail_count=0
 tail_max=30
 tail_gap=1
 
-sleep $tail_gap
+sleep 3
 if [ ! -e $APP_file.log ] ; then
   echo_error "no log file found"
   exit 1

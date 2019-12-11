@@ -22,7 +22,7 @@ public class MvcInterceptorConfig extends WebMvcConfigurationSupport{
         // excludePathPatterns 用户排除拦截
         logger.debug("Configuration add: loginInterceptor");
         registry.addInterceptor(loginInterceptor).addPathPatterns("/**")
-                .excludePathPatterns("/login","/test/**","/common/**","/backdoor/**");
+                .excludePathPatterns("/test/**","/common/**","/backdoor/**");
         super.addInterceptors(registry);
     }
 }

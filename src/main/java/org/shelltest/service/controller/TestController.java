@@ -6,6 +6,7 @@ import org.shelltest.service.mapper.HistoryMapper;
 import org.shelltest.service.mapper.ServiceArgsMapper;
 import org.shelltest.service.services.BuildAppService;
 import org.shelltest.service.services.LoginAuth;
+import org.shelltest.service.services.StartAppService;
 import org.shelltest.service.services.UploadService;
 import org.shelltest.service.utils.EncUtil;
 import org.shelltest.service.utils.ResponseBuilder;
@@ -46,6 +47,18 @@ public class TestController {
     BuildAppService buildAppService;
     @Autowired
     ServiceArgsMapper serviceArgsMapper;
+    @Autowired
+    StartAppService startAppService;
+
+    @GetMapping("/backdoor/encode")
+    public ResponseEntity getEnc(String pass) {
+        return new ResponseBuilder().setData(EncUtil.encode(pass)).getResponseEntity();
+    }
+    @GetMapping("/backdoor/decode")
+    public ResponseEntity getDec(String enc) {
+        // .setData(EncUtil.decode(EncUtil.decode(enc)))
+        return new ResponseBuilder().getResponseEntity();
+    }
 
     @GetMapping("/test/hello")
     public ResponseEntity sayHello() throws MyException {
@@ -54,48 +67,12 @@ public class TestController {
         return new ResponseBuilder().setData(String.join(" ", list)).getResponseEntity();
     }
 
-    @GetMapping("/backdoor/encode")
-    public ResponseEntity getEnc(String pass) {
-        return new ResponseBuilder().setData(EncUtil.encode(EncUtil.encode(pass))).getResponseEntity();
-    }
-    @GetMapping("/backdoor/decode")
-    public ResponseEntity getDec(String enc) {
-        // .setData(EncUtil.decode(EncUtil.decode(enc)))
-        return new ResponseBuilder().getResponseEntity();
-    }
-
-    @GetMapping("/test/test")
-    public ResponseEntity test() {
-        logger.debug("--- hello world test() ---");
-        List<History> list = historyMapper.selectNotRead(10);
-        for (int i = 0; i < list.size(); i++) {
-            logger.debug(list.get(i).getResult());
-        }
-        return new ResponseBuilder().setData(list).getResponseEntity();
-    }
-
-    /**
-     * Java执行shell脚本入口
-     * @throws Exception
-     */
-    @GetMapping("/test/run")
-    public ResponseEntity service() throws Exception{
-        ShellRunner remoteRunner = new ShellRunner("192.168.43.121","server","password");
-        remoteRunner.login();
-
-        //打包完成，上传包到远程服务器
-//        uploadService.uploadFiles(remoteRunner, "shell",
-//                "ms/deploy");
-        /*
-        //上传完成，在远程服务器进行部署
-        uploadService.uploadScript(remoteRunner, "DeployFrontend.sh", "frontend/expect");
-        //2.整理部署结果
-        if (remoteRunner.runCommand("sh DeployFrontend.sh")) {
-            logger.info("部署成功");
-        } else {
-            logger.error("部署异常："+remoteRunner.getError());
-        }*/
-        remoteRunner.exit();
+    @GetMapping("/test/startApp")
+    public ResponseEntity startApp() throws MyException {
+        String serviceArgs =
+                String.join(" ", serviceArgsMapper.getArgsWithDefault("192.168.0.2", "eureka"));
+        // 启动进程
+        // startAppService.startService(null, "a", "eureka", serviceArgs);
         return new ResponseBuilder().getResponseEntity();
     }
 }

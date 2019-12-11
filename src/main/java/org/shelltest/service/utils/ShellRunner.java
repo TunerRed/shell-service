@@ -36,7 +36,7 @@ public class ShellRunner {
     public ShellRunner(@NotNull String host,@NotNull String username,@NotNull String password) {
         this.host=host;
         this.username=username;
-        this.password= EncUtil.decode(EncUtil.decode(password));
+        this.password= EncUtil.decode(password);
         // logger.info("主机密码："+this.password);
         resultMsg=new LinkedList<>();
         errorMsg=new StringBuffer();

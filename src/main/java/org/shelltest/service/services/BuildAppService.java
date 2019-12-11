@@ -57,7 +57,7 @@ public class BuildAppService {
      * @param deployPath 要上传到远程路径
      * @param runPath 远程机器上jar包运行的路径
      * */
-    public void deployService(ShellRunner remoteRunner, String localPath, String deployPath, String runPath) {
+    public void deployService(ShellRunner remoteRunner, String localPath, String deployPath, String backupPath,String runPath) {
         History deployLog = deployUtil.createLogEntity(remoteRunner);
         StringBuffer deployResult = new StringBuffer();
         deployResult.append("部署类型：从文件部署后端\n");
@@ -71,15 +71,39 @@ public class BuildAppService {
              * 此处默认所有jar都在同一目录下，视各自情况改动代码、添加path字段等等
              * */
             String[] services = uploadService.uploadFiles(remoteRunner, localPath, deployPath, "jar");
-            deployResult.append("上传所有jar包成功\n");
+            deployResult.append("上传至远程服务器成功\n");
             // TODO 脚本未测试
-            if (remoteRunner.runCommand("sh DeployService.sh"+ShellRunner.appendArgs(new String[]{}))) {
-                deployResult.append("上传至远程服务器成功\n");
-                // todo 把eureka和config放在前边启动
-                // config放第二个，eureka放第一个，若第一个不是eureka且第二个是config，第一第二交换
-                for (int i = 0; i < services.length; i++) {
+            if (remoteRunner.runCommand("sh DeployService.sh"+ShellRunner.appendArgs(new String[]{deployPath, backupPath, runPath}))) {
+                deployResult.append("部署/替换jar包成功\n");
+                /**
+                 * 系统架构：eureka + config（从数据库获取其他应用的配置） + 其他需要获取各种配置的应用
+                 * config放第二个，eureka放第一个，若第一个不是eureka，第一第二交换
+                 * */
 
+                /*
+                for (int i = 1; i < services.length; i++) {
+                    if (services[i].contains("config"))
+                        swap(services, 1, i);
+                    else if (services[i].contains("eureka"))
+                        swap(services, 0, i);
                 }
+                if (services.length > 1 && !services[0].contains("eureka"))
+                    swap(services, 0, 1);
+                */
+
+                for (int i = 2; i < services.length; i++)
+                    if (services[i].contains("config")) {
+                        swap(services, 1, i);
+                        break;
+                    }
+                for (int i = 1; i < services.length; i++)
+                    if (services[i].contains("eureka")) {
+                        swap(services, 0, i);
+                        break;
+                    }
+                if (services.length > 1 && !services[0].contains("eureka"))
+                    swap(services, 0, 1);
+
                 for (int i = 0; i < services.length; i++) {
                     services[i] = services[i].substring(0, services[i].lastIndexOf(".jar"));
                     // 可行性前提：多次使用-D指定同一个属性，以最后指定的为准
@@ -114,6 +138,12 @@ public class BuildAppService {
             historyMapper.insertSelective(deployLog);
             deployResult.append("--- 回滚完成，已存储记录 ---");
         }
+    }
+
+    private void swap(String[] arr, int x1, int x2) {
+        String temp = arr[x1];
+        arr[x1] = arr[x2];
+        arr[x2] = temp;
     }
 
     /**
@@ -182,14 +212,15 @@ public class BuildAppService {
                 // localRunner.runCommand("rm -f LoginAuth.sh");
                 localRunner.exit();
 
-                //1.整理打包结果
+                String remoteDeployPath = propertyService.getValueByType(propertyService.getServerInfo(deployLog.getTarget()),Constant.PropertyType.DEPLOY_PATH);
                 //确认可以登录远程服务器
                 remoteRunner = new ShellRunner(deployLog.getTarget(), propertyService.getValueByType(serverInfoList, Constant.PropertyType.USERNAME),
                         propertyService.getValueByType(serverInfoList,Constant.PropertyType.PASSWORD));
                 remoteRunner.login();
+                remoteRunner.runCommand("mkdir -p "+remoteDeployPath);
+                remoteRunner.runCommand("rm -f "+remoteDeployPath+"/*.tar.gz");
                 //打包完成，上传包到远程服务器
-                uploadService.uploadFiles(remoteRunner, localGitPath,
-                        propertyService.getValueByType(propertyService.getServerInfo(deployLog.getTarget()),Constant.PropertyType.DEPLOY_PATH),"tar.gz");
+                uploadService.uploadFiles(remoteRunner, localGitPath, remoteDeployPath,"tar.gz");
                 //上传完成，在远程服务器进行部署
                 uploadService.uploadScript(remoteRunner, "DeployFrontend.sh", "frontend");
                 //2.整理部署结果

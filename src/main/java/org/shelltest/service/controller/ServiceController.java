@@ -98,6 +98,7 @@ public class ServiceController {
         uploadService.uploadScript(remoteRunner, "StartService.sh", "service");
         buildAppService.deployService(remoteRunner, jarPath+"/"+username,
                 propertyService.getValueByType(serverInfoList, Constant.PropertyType.DEPLOY_PATH),
+                propertyService.getValueByType(serverInfoList, Constant.PropertyType.BACKUP_PATH),
                 propertyService.getValueByType(serverInfoList, Constant.PropertyType.RUN_PATH));
         return new ResponseBuilder().getResponseEntity();
     }

@@ -1,7 +1,10 @@
 package org.shelltest.service.services;
 
+import org.jetbrains.annotations.NotNull;
 import org.shelltest.service.exception.MyException;
 import org.shelltest.service.utils.ShellRunner;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 
 /**
@@ -9,9 +12,13 @@ import org.springframework.stereotype.Service;
  * */
 @Service
 public class StartAppService {
-    public void startService(ShellRunner remoteRunner, String path, String filename, String args) throws MyException {
-        // args加单引号防止只读取到一个-D，未测试
-        remoteRunner.runCommand("sh StartService.sh" + path + " " + filename + " '"+args+"'");
+
+    Logger logger = LoggerFactory.getLogger(this.getClass());
+
+    public void startService(@NotNull ShellRunner remoteRunner, String path, String filename, String args) throws MyException {
+        // args加引号防止只读取到一个-D，为了防止参数需要加单引号的，这里使用了双引号
+        String cmd = "sh StartService.sh " + path + " " + filename + " \""+args+"\"";
+        remoteRunner.runCommand(cmd);
     }
 
     /**
