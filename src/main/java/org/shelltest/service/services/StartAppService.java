@@ -15,10 +15,10 @@ public class StartAppService {
 
     Logger logger = LoggerFactory.getLogger(this.getClass());
 
-    public void startService(@NotNull ShellRunner remoteRunner, String path, String filename, String args) throws MyException {
+    public boolean startService(@NotNull ShellRunner remoteRunner, String path, String filename, String args) throws MyException {
         // args加引号防止只读取到一个-D，为了防止参数需要加单引号的，这里使用了双引号
         String cmd = "sh StartService.sh " + path + " " + filename + " \""+args+"\"";
-        remoteRunner.runCommand(cmd);
+        return remoteRunner.runCommand(cmd);
     }
 
     /**

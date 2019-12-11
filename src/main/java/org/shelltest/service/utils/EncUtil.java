@@ -25,4 +25,13 @@ public class EncUtil {
         }
         return origin;
     }
+    public static String decodeUserPass(@NotNull String password) {
+        String origin = null;
+        try {
+            origin = new String(Base64Utils.decode(password.getBytes()), "UTF-8");
+        } catch (UnsupportedEncodingException e) {
+            e.printStackTrace();
+        }
+        return origin;
+    }
 }

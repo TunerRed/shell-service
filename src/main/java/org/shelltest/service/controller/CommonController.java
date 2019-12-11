@@ -58,8 +58,8 @@ public class CommonController {
         else {
             Property loginInfo = propertyService.getPropertyByKeys("LOGIN", username);
             if (loginInfo == null)
-                throw new LoginException(Constant.ResultCode.NOT_FOUND, "用户名错误");
-            String enc = EncUtil.encode(password.trim());
+                throw new LoginException(Constant.ResultCode.NOT_FOUND, "未注册的用户");
+            String enc = EncUtil.encode(EncUtil.decodeUserPass(password.trim()));
             if (!enc.equals(loginInfo.getVal()))
                 throw new LoginException(Constant.ResultCode.NOT_FOUND, "密码错误");
             //logger.debug("登录成功，用户："+username+" "+Base64Utils.decode(loginInfo.getVal().getBytes()));

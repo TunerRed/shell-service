@@ -155,23 +155,21 @@ public class FrontendController {
 
     /**
      * 从git部署前端.
-     * @param buildBundle 打包信息，包含目标主机和要打的包
+     * @param buildDTO 打包信息，包含目标主机和要打的包
      * @return 登录打包机器（本机）无问题后直接返回ok，剩下的打包工作在线程中执行
      * */
     @PostMapping("/deployFromGit")
-    public ResponseEntity deployFrontendFromGit(@Valid @RequestBody BuildDTO buildBundle) throws MyException {
-        // todo @Valid
-        // 数据包DTO 原本不知道规范名称，所以起名为Bundle
-        String serverIP = buildBundle.getServerIP();
-        BuildEntity[] deployList = buildBundle.getDeployList();
+    public ResponseEntity deployFrontendFromGit(@Valid @RequestBody BuildDTO buildDTO) throws MyException {
+        String serverIP = buildDTO.getServerIP();
+        BuildEntity[] deployList = buildDTO.getDeployList();
         // 确认要部署的服务器有相应配置，避免白白打包浪费资源
         List<Property> serverInfoList = propertyService.getServerInfo(serverIP);
         if (serverInfoList == null)
             throw new MyException(Constant.ResultCode.NOT_FOUND,"找不到服务器对应配置");
-        //登录本地服务器，上传脚本至本地目录(复用，不然还需要些在本地执行脚本的代码。可能会有性能问题)
+        //登录本地服务器，上传脚本至本地目录(复用，不然还需要写在本地执行脚本的代码。可能会有性能问题)
         ShellRunner localRunner = new ShellRunner(localURL,localUsername,localPassword);
         localRunner.login();
-        localRunner.runCommand("rm -r "+localGitPath+"/*.tar.gz");
+        localRunner.runCommand("rm -f "+localGitPath+"/*.tar.gz");
         uploadService.uploadScript(localRunner, "BuildFrontend.sh", "frontend");
         // uploadService.uploadScript(localRunner, "LoginAuth.sh", "frontend/expect");
         buildAppService.buildFrontendThread(localRunner, propertyService.getServerInfo(serverIP), deployList);
