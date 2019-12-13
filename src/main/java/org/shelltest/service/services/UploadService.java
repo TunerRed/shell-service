@@ -92,6 +92,10 @@ public class UploadService {
         } catch (IOException e) {
             throw new MyException(Constant.ResultCode.LOGIN_FAILED, "无法创建scp连接:"+e.getMessage());
         }
+        // 返回文件列表包含路径，要去掉
+        if (uploadNameList != null)
+            for (int i = 0; i < uploadNameList.length; i++)
+                uploadNameList[i] = uploadNameList[i].substring(uploadNameList[i].lastIndexOf('/') + 1);
         return uploadNameList;
     }
 

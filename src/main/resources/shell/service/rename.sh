@@ -11,8 +11,9 @@ function rename() {
     for _suffix in ${_suffix_list[@]} ; do
         _filename=${_filename%$_suffix}
     done
-    mv $1 _filename'.jar'
-    #echo _filename'.jar'
+    if [ "$1"!="$_filename.jar" ] ; then
+      mv $1 $_filename'.jar'
+    fi
 }
 
 JAR_CATEGORY=$1

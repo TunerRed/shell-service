@@ -1,5 +1,6 @@
 package org.shelltest.service.controller;
 
+import org.jetbrains.annotations.NotNull;
 import org.shelltest.service.entity.Property;
 import org.shelltest.service.entity.PropertyExample;
 import org.shelltest.service.exception.MyException;
@@ -67,9 +68,25 @@ public class ServiceController {
     }
 
     @GetMapping("/getEurekaList")
-    public String getEurekaList(String serverIP) {
+    public ResponseEntity getEurekaList(String serverIP) {
         logger.info("/service/getEurekaList");
-        return "";
+        /**
+         * list: [
+         *           {
+         *             name: 'test',
+         *             jar: '乌拉-test-1031.jar',
+         *             //确认应用有使用actuator
+         *             version: '1121',
+         *             port: '1234',
+         *             started: true,
+         *             actuator: '',
+         *             runTime: '1031',
+         *             pid: '0'
+         *           }
+         *       ]
+         * */
+
+        return new ResponseBuilder().getResponseEntity();
     }
 
     @GetMapping("/getServiceList")
@@ -84,8 +101,8 @@ public class ServiceController {
         return "";
     }
 
-    @PostMapping("/deployServiceFromFile")
-    public ResponseEntity deployServiceFromFile(String serverIP) throws MyException {
+    @GetMapping("/deployServiceFromFile")
+    public ResponseEntity deployServiceFromFile(@NotNull @RequestParam("serverIP") String serverIP) throws MyException {
         logger.info("/service/deployFromFile");
         List<Property> serverInfoList = propertyService.getServerInfo(serverIP);
         ShellRunner remoteRunner = new ShellRunner(serverIP,
@@ -134,7 +151,8 @@ public class ServiceController {
         }
         logger.info("文件已上传至："+jarPath+"/"+username);
         uploadService.uploadScript(shellRunner, "rename.sh", "service");
-        shellRunner.runCommand("sh rename.sh");
+        shellRunner.runCommand("sh rename.sh "+jarPath+"/"+username);
+        shellRunner.runCommand("rm -f rename.sh");
         shellRunner.exit();
         logger.info("文件重命名完成");
         logger.info("文件上传结束");

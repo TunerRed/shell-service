@@ -22,7 +22,7 @@ local:
   # 将本机也视作一台远程主机，所以需要用户名密码
   url: localhost
   username: test
-  password: jiami
+  password: Y0dGemMzZHZjbVE9
   # 配置本地的一些路径
   path:
     shell: shell
