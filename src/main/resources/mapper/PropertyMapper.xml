@@ -92,9 +92,7 @@
     <if test="_parameter != null">
       <include refid="Example_Where_Clause" />
     </if>
-    <if test="orderByClause != null">
-      order by ${orderByClause}
-    </if>
+    order by `seq` asc
   </select>
   <delete id="deleteByExample" parameterType="org.shelltest.service.entity.PropertyExample">
     delete from deploy_properties

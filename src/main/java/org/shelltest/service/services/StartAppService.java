@@ -7,6 +7,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 
+import java.util.List;
+
 /**
  * 启动jar包.
  * */
@@ -15,9 +17,9 @@ public class StartAppService {
 
     Logger logger = LoggerFactory.getLogger(this.getClass());
 
-    public boolean startService(@NotNull ShellRunner remoteRunner, String path, String filename, String args) throws MyException {
+    public boolean startService(@NotNull ShellRunner remoteRunner, String path, String filename, String args, String logPath) throws MyException {
         // args加引号防止只读取到一个-D，为了防止参数需要加单引号的，这里使用了双引号
-        String cmd = "sh StartService.sh " + path + " " + filename + " \""+args+"\"";
+        String cmd = "sh StartService.sh " + ShellRunner.appendArgs(new String[]{path, filename, "\""+args+"\"", logPath});
         return remoteRunner.runCommand(cmd);
     }
 
@@ -43,12 +45,20 @@ public class StartAppService {
             remoteRunner.runCommand("kill -9 "+pid);
         }*/
         // 如果同一个服务器上部署了两套服务，则会误杀
-        if (remoteRunner.runCommand("ps -ef | grep [j]ava | grep -E \""+filename+"-[0-9]{4}.jar$\" | awk '{print $2}'")
-                && remoteRunner.getResult() != null) {
-            String pid = remoteRunner.getResult().get(0);
+        int pid = getProcessPid(remoteRunner, filename);
+        if (pid != 0) {
             remoteRunner.runCommand("kill -9 "+pid);
             return true;
         }
         return false;
+    }
+
+    public int getProcessPid (ShellRunner remoteRunner, String filename) throws MyException {
+        if (remoteRunner.runCommand("ps -ef | grep [j]ava | grep -E \""+filename+"-[0-9]{4}.jar$\" | awk '{print $2}'")
+                && remoteRunner.getResult() != null) {
+            String pid = remoteRunner.getResult().get(0);
+            return Integer.parseInt(pid);
+        }
+        return 0;
     }
 }

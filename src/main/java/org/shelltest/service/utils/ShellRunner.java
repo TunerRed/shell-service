@@ -2,12 +2,15 @@ package org.shelltest.service.utils;
 
 import ch.ethz.ssh2.ChannelCondition;
 import org.jetbrains.annotations.NotNull;
+import org.shelltest.service.entity.Property;
 import org.shelltest.service.exception.MyException;
+import org.shelltest.service.services.PropertyService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.*;
 import java.util.LinkedList;
+import java.util.List;
 
 import ch.ethz.ssh2.Connection;
 import ch.ethz.ssh2.Session;
@@ -33,10 +36,34 @@ public class ShellRunner {
 
     private Logger logger = LoggerFactory.getLogger(this.getClass());
 
-    public ShellRunner(@NotNull String host,@NotNull String username,@NotNull String password) {
+    public ShellRunner(String host, String username, String password) throws MyException {
+        this.init(host, username, password);
+    }
+
+    /**
+     * 一般情况下不会只获取用户名密码就行了，还需要其他路径信息。
+     * 所以这里不再多查询一次数据库，直接传list进来
+     * */
+    public ShellRunner(String host, PropertyService propertyService, List<Property> serverInfo) throws MyException {
+        init(host,propertyService.getValueByType(serverInfo, Constant.PropertyType.USERNAME),
+                propertyService.getValueByType(serverInfo, Constant.PropertyType.PASSWORD));
+    }
+
+    /**
+     * 只需要用户名密码进行登录操作的情况
+     * */
+    public ShellRunner(String host, PropertyService propertyService) throws MyException {
+        List<Property> serverInfo = propertyService.getServerInfo(host);
+        init(host,propertyService.getValueByType(serverInfo, Constant.PropertyType.USERNAME),
+                propertyService.getValueByType(serverInfo, Constant.PropertyType.PASSWORD));
+    }
+
+    public void init(@NotNull String host,@NotNull String username,@NotNull String password) throws MyException {
         this.host=host;
         this.username=username;
         this.password= EncUtil.decode(password);
+        if (this.host.equals("")||this.username.equals("")||this.password.equals(""))
+            throw new MyException(Constant.ResultCode.ARGS_ERROR, "缺少必要的远程登录信息");
         // logger.info("主机密码："+this.password);
         resultMsg=new LinkedList<>();
         errorMsg=new StringBuffer();
@@ -149,10 +176,10 @@ public class ShellRunner {
             return null;
         return (LinkedList<String>) resultMsg.clone();
     }
-    public String[] getResultList() {
+    public String[] getResultArray() {
         if (resultMsg == null)
             return null;
-        return resultMsg.toString().split("\n");
+        return getResult().toArray(new String[]{});
     }
 
     /**

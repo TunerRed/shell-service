@@ -28,7 +28,13 @@ git pull
 ### MAVEN （后端打包用）
 1. 保证在项目目录下正常执行mvn clean install
 ---
-
+## 注意事项
+1. 个人搭建npm环境时使用[*ln -s*]创建链接，检测打包进程时该进程是有目录信息的（详见BuildAppService.isPacking方法）
+2. 目前同一主机（IP）只能有一套配置
+```
+可以借助seq字段指定登录同一IP要使用的配置（用户名，密码，路径，等等），每次获取配置时需要指定seq
+目前不打算做
+```
 ## 更新日志
 - 2019的某天
 1. 搭建了自己的centos虚拟机用于测试（https://blog.csdn.net/qq_28866471/article/details/102984161）

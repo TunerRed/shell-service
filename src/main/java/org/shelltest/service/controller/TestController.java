@@ -21,7 +21,7 @@ import org.springframework.web.bind.annotation.RestController;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.List;
+import java.util.LinkedList;
 
 @RestController
 public class TestController {
@@ -63,7 +63,15 @@ public class TestController {
     @GetMapping("/test/hello")
     public ResponseEntity sayHello() throws MyException {
         logger.debug("--- hello world sayHello() ---");
-        List<String> list = serviceArgsMapper.getArgsWithDefault("192.168.0.2", "eureka");
+        // List<String> list = serviceArgsMapper.getArgsWithDefault("192.168.0.2", "eureka");
+        LinkedList<String> list = new LinkedList<>();
+        list.add("test1");
+        list.add("test3");
+        list.add("test2");
+        String[] a = (((LinkedList<String>)list.clone()).toArray(new String[]{}));
+        for (int i = 0; i < a.length; i++) {
+            logger.debug(a[i]);
+        }
         return new ResponseBuilder().setData(String.join(" ", list)).getResponseEntity();
     }
 

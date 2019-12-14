@@ -90,6 +90,13 @@
     order by `server` desc
   </select>
 
+  <select id="getAppNameListWithDefault" resultMap="BaseResultMap" >
+    select DISTINCT `file`,`application`
+    from deploy_service_args
+    where `server` in (#{serverIP},'default')
+    order by `server` asc
+  </select>
+
   <delete id="deleteByExample" parameterType="org.shelltest.service.entity.ServiceArgsExample" >
     delete from deploy_service_args
     <if test="_parameter != null" >

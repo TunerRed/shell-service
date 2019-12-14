@@ -22,13 +22,17 @@ public class Constant {
             DEPLOY_PATH = "DEPLOY_PATH",
             BACKUP_PATH = "BACKUP_PATH",
             RUN_PATH = "RUN_PATH",
+            LOG_PATH = "LOG_PATH",
             USERNAME = "SERVER_USER",
-            PASSWORD = "SERVER_PASS";
+            PASSWORD = "SERVER_PASS",
+            JAR_RENAME = "RENAME";
     }
     public class PropertyKey {
         public static final String
             FRONTEND = "FRONTEND",
-            SERVICE = "SERVICE";
+            SERVICE = "SERVICE",
+            JAR_PREFIX = "PREFIX",
+            JAR_SUFFIX = "SUFFIX";
     }
     public class RequestArg {
         public static final String

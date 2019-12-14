@@ -18,6 +18,7 @@ public interface ServiceArgsMapper {
 
     List<ServiceArgs> selectByExample(ServiceArgsExample example);
     List<String> getArgsWithDefault(@Param("serverIP") String serverIP, @Param("filename") String filename);
+    List<ServiceArgs> getAppNameListWithDefault(@Param("serverIP") String serverIP);
 
     int updateByExampleSelective(@Param("record") ServiceArgs record, @Param("example") ServiceArgsExample example);
 

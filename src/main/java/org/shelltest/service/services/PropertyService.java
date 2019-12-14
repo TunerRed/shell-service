@@ -8,6 +8,7 @@ import org.shelltest.service.utils.Constant;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import java.util.LinkedList;
 import java.util.List;
 
 @Service
@@ -17,7 +18,7 @@ public class PropertyService {
     PropertyMapper propertyMapper;
 
     /**
-     * 使用联合主键获取指定记录.
+     * 使用获取符合条件的第一条记录.
      * */
     public Property getPropertyByKeys (String type, String key) {
         PropertyExample serverExample = new PropertyExample();
@@ -25,6 +26,20 @@ public class PropertyService {
         List<Property> list = propertyMapper.selectByExample(serverExample);
         return (list==null||list.size()==0)?null:list.get(0);
     }
+
+    /**
+     * 获取目标值的集合.
+     * @param type 目标记录的type
+     * @param key 目标记录的key
+     * @return 返回指定type和key的多条记录
+     * */
+    public List<String> getValueListByKeys (String type, String key) {
+        PropertyExample serverExample = new PropertyExample();
+        serverExample.createCriteria().andTypeEqualTo(type).andKeyEqualTo(key);
+        List<String> list = propertyMapper.selectValueByExample(serverExample);
+        return (list==null||list.size()==0)?null:list;
+    }
+
     /**
      * 从服务器的一套配置中根据字段获取自己想要的配置.
      * @param list 服务器配置
@@ -56,5 +71,24 @@ public class PropertyService {
         serverInfoExample.createCriteria().andKeyEqualTo(serverIP);
         List<Property> serverInfo = propertyMapper.selectByExample(serverInfoExample);
         return (serverInfo==null||serverInfo.isEmpty())?null:serverInfo;
+    }
+
+    public List<String> getAppPrefixList() {
+        return joinWordList(getValueListByKeys(Constant.PropertyType.JAR_RENAME, Constant.PropertyKey.JAR_PREFIX));
+    }
+    public List<String> getAppSuffixList() {
+        return joinWordList(getValueListByKeys(Constant.PropertyType.JAR_RENAME, Constant.PropertyKey.JAR_SUFFIX));
+    }
+    private List<String> joinWordList(List<String> list) {
+        if (list == null)
+            return null;
+        List<String> retList = new LinkedList<>();
+        for (int i = 0; i < list.size(); i++) {
+            String[] wordList = list.get(i).split(" ");
+            for (int j = 0; j < wordList.length; j++) {
+                retList.add(wordList[i]);
+            }
+        }
+        return retList;
     }
 }

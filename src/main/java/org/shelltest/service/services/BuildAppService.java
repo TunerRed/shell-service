@@ -57,7 +57,7 @@ public class BuildAppService {
      * @param deployPath 要上传到远程路径
      * @param runPath 远程机器上jar包运行的路径
      * */
-    public void deployService(ShellRunner remoteRunner, String localPath, String deployPath, String backupPath,String runPath) {
+    public void deployService(ShellRunner remoteRunner, String localPath, String deployPath, String backupPath,String runPath,String logPath) {
         History deployLog = deployUtil.createLogEntity(remoteRunner);
         StringBuffer deployResult = new StringBuffer();
         deployResult.append("部署类型：从文件部署后端\n");
@@ -74,8 +74,7 @@ public class BuildAppService {
                 String[] services = uploadService.uploadFiles(remoteRunner, localPath, deployPath, "jar");
                 deployResult.append("上传至远程服务器成功\n");
                 if (remoteRunner.runCommand("sh DeployService.sh"+ShellRunner.appendArgs(new String[]{deployPath, backupPath, runPath}))) {
-                    deployResult.append("部署/替换jar包成功\n\n");
-                    deployResult.append("启动服务：\n");
+                    deployResult.append("部署/替换jar包成功\n---------------------------\n");
                     /**
                      * 系统架构：eureka + config（从数据库获取其他应用的配置） + 其他需要获取各种配置的应用
                      * config放第二个，eureka放第一个，若第一个不是eureka，第一第二交换
@@ -111,15 +110,22 @@ public class BuildAppService {
                         String serviceArgs =
                                 String.join(" ", serviceArgsMapper.getArgsWithDefault(deployLog.getTarget(), services[i]));
                         // 启动进程
-                        if (startAppService.killService(remoteRunner, services[i]))
-                            deployResult.append("杀旧进程："+services[i]+"\n");
-                        if (startAppService.startService(remoteRunner, runPath, services[i], serviceArgs)) {
-                            deployResult.append("服务启动成功："+services[i]+" "+remoteRunner.getResultList().toString()+"\n");
-                        } else {
-                            deployResult.append("服务启动失败："+services[i]+"\n");
+                        deployResult.append("服务启动信息："+services[i]+"\n");
+                        try {
+                            if (startAppService.killService(remoteRunner, services[i]))
+                                deployResult.append("杀旧进程："+services[i]+"\n");
+                            if (startAppService.startService(remoteRunner, runPath, services[i], serviceArgs, logPath)) {
+                                deployResult.append("【成功】"+remoteRunner.getResult().toString()+"\n");
+                            } else {
+                                deployResult.append("【失败】\n");
+                            }
+                            deployResult.append("错误信息：\n"+remoteRunner.getError());
+                            logger.info("服务启动完成"+services[i]);
+                        } catch (MyException e) {
+                            deployResult.append("服务启动异常："+e.getMessage());
+                            e.printStackTrace();
                         }
-                        deployResult.append("错误信息：\n"+remoteRunner.getError()+"\n\n");
-                        logger.info("服务启动成功"+services[i]);
+                        deployResult.append("---------------------------\n");
                     }
                 } else {
                     deployResult.append("上传至远程服务器异常\n");
@@ -140,7 +146,7 @@ public class BuildAppService {
                 deployLog.setEndTime(new Date());
                 deployLog.setResult(deployResult.toString());
                 historyMapper.insertSelective(deployLog);
-                deployResult.append("--- 回滚完成，已存储记录 ---");
+                logger.info("--- 部署完成，已存储记录 ---");
             }
         }).start();
     }
@@ -182,7 +188,7 @@ public class BuildAppService {
         deployLog.setEndTime(new Date());
         deployLog.setResult(deployResult.toString());
         historyMapper.insertSelective(deployLog);
-        deployResult.append("--- 回滚完成，已存储记录 ---");
+        logger.info("--- 回滚完成，已存储记录 ---");
     }
 
     /**
@@ -256,7 +262,7 @@ public class BuildAppService {
             deployLog.setEndTime(new Date());
             deployLog.setResult(deployResult.toString());
             historyMapper.insertSelective(deployLog);
-            deployResult.append("--- 部署完成，已存储记录 ---");
+            logger.info("--- 部署完成，已存储记录 ---");
             // emailService.sendSimpleEmail(phone,serverIP+"部署结束", deployResult.toString());
         }).start();
     }
@@ -298,7 +304,6 @@ public class BuildAppService {
 
         shellRunner.runCommand("ps -ef|grep [m]vn|grep '"+gitRepository+"' | wc -l");
         String retMaven = (shellRunner.getResult()==null || shellRunner.getResult().size() == 0)?"0":(shellRunner.getResult().get(0));
-        logger.info("maven进程运行数量 in "+gitRepository+" ： "+retMaven);
 
         return !(retNode.equalsIgnoreCase("0") && retMaven.equalsIgnoreCase("0"));
     }

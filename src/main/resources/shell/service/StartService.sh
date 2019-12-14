@@ -2,7 +2,7 @@ function echo_error() {
     echo -e "$1" 1>&2
 }
 
-if [ $# -ne 3 ] ; then
+if [ $# -ne 4 ] ; then
   echo_error "args error"
   exit 1
 fi
@@ -12,8 +12,10 @@ source ./.bash_profile
 APP_path="`pwd`/$1"
 APP_file=$2
 APP_args=$3
+Log_path="`pwd`/$4"
 
 mkdir -p $APP_path
+mkdir -p $Log_path
 cd $APP_path
 APP_file=`ls -r | egrep "^$APP_file-[0-9]{4}.jar$" | awk 'NR==1'`
 
@@ -22,7 +24,7 @@ if [ ! -e $APP_path/$APP_file ] ; then
   exit 1
 fi 
 
-APP_log="${APP_file%.jar}.log"
+APP_log="$Log_path/${APP_file%.jar}.log"
 CMD="nohup java -jar $APP_args $APP_path/$APP_file >$APP_log 2>&1 &"
 echo "$CMD"
 eval "$CMD"
