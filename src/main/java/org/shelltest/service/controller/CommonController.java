@@ -1,15 +1,13 @@
 package org.shelltest.service.controller;
 
+import org.shelltest.service.dto.StatisticEntity;
 import org.shelltest.service.entity.History;
 import org.shelltest.service.entity.Property;
 import org.shelltest.service.exception.LoginException;
 import org.shelltest.service.mapper.HistoryMapper;
 import org.shelltest.service.services.LoginAuth;
 import org.shelltest.service.services.PropertyService;
-import org.shelltest.service.utils.EncUtil;
-import org.shelltest.service.utils.Constant;
-import org.shelltest.service.utils.ResponseBuilder;
-import org.shelltest.service.utils.ResponseEntity;
+import org.shelltest.service.utils.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -35,6 +33,7 @@ public class CommonController {
 
     @GetMapping("/message-list")
     public ResponseEntity getDeployMessage() {
+        logger.info("/common/message-list");
         int notReadCount = 0;
         List<History> totalList = historyMapper.selectNotRead(20);
         List<History> readList = null;
@@ -49,8 +48,17 @@ public class CommonController {
         return new ResponseBuilder().setData(totalList).getResponseEntity();
     }
 
+    @GetMapping("/statistic")
+    public ResponseEntity getStatistics() {
+        logger.info("/common/statistic");
+        List<StatisticEntity> list = historyMapper.getStatisticList(OtherUtil.getFormatDateInMonth(-1,1),
+                OtherUtil.getFormatDateInMonth(1, 0));
+        return new ResponseBuilder().putItem("dateList", list).getResponseEntity();
+    }
+
     @GetMapping("/login")
     public ResponseEntity login (String username, String password) throws LoginException {
+        logger.info("/common/login");
         String token;
         if (username == null || password == null) {
             throw new LoginException("登录失败，请重新登录");

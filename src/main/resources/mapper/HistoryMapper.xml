@@ -13,6 +13,10 @@
   <resultMap id="ResultMapWithBLOBs" type="org.shelltest.service.entity.History" extends="BaseResultMap" >
     <result column="result" property="result" jdbcType="LONGVARCHAR" />
   </resultMap>
+  <resultMap id="StatisticResultMap" type="org.shelltest.service.dto.StatisticEntity">
+    <result column="date" property="date" jdbcType="VARCHAR" />
+    <result column="rate" property="rate" jdbcType="INTEGER" />
+  </resultMap>
   <sql id="Example_Where_Clause" >
     <where >
       <foreach collection="oredCriteria" item="criteria" separator="or" >
@@ -115,6 +119,7 @@
     from deploy_history
     where `message_id` = #{messageId,jdbcType=INTEGER}
   </select>
+
   <!--limit及排序-->
   <select id="selectNotRead" resultMap="ResultMapWithBLOBs" parameterType="java.lang.Integer" >
     select
@@ -132,6 +137,15 @@
     from deploy_history
     where `is_read` = '1' order by `message_id` desc limit #{limit,jdbcType=INTEGER}
   </select>
+
+  <select id="getStatisticList" resultMap="StatisticResultMap">
+    SELECT DATE(start_time) AS `date`,count(0) AS `rate`
+    FROM `deploy_history`
+    WHERE DATE(start_time) &gt;= #{from} AND DATE(start_time) &lt;= #{to}
+    GROUP BY `date`
+    ORDER BY `date`
+  </select>
+
   <delete id="deleteByPrimaryKey" parameterType="java.lang.Integer" >
     delete from deploy_history
     where `message_id` = #{messageId,jdbcType=INTEGER}

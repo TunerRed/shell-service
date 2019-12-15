@@ -114,7 +114,7 @@ public class BuildAppService {
                         try {
                             if (startAppService.killService(remoteRunner, services[i]))
                                 deployResult.append("杀旧进程："+services[i]+"\n");
-                            if (startAppService.startService(remoteRunner, runPath, services[i], serviceArgs, logPath)) {
+                            if (startAppService.startService(remoteRunner, services[i], runPath, serviceArgs, logPath)) {
                                 deployResult.append("【成功】"+remoteRunner.getResult().toString()+"\n");
                             } else {
                                 deployResult.append("【失败】\n");

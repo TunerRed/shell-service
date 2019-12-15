@@ -17,7 +17,7 @@ public class StartAppService {
 
     Logger logger = LoggerFactory.getLogger(this.getClass());
 
-    public boolean startService(@NotNull ShellRunner remoteRunner, String path, String filename, String args, String logPath) throws MyException {
+    public boolean startService(@NotNull ShellRunner remoteRunner, String filename,String path, String args, String logPath) throws MyException {
         // args加引号防止只读取到一个-D，为了防止参数需要加单引号的，这里使用了双引号
         String cmd = "sh StartService.sh " + ShellRunner.appendArgs(new String[]{path, filename, "\""+args+"\"", logPath});
         return remoteRunner.runCommand(cmd);
@@ -46,11 +46,7 @@ public class StartAppService {
         }*/
         // 如果同一个服务器上部署了两套服务，则会误杀
         int pid = getProcessPid(remoteRunner, filename);
-        if (pid != 0) {
-            remoteRunner.runCommand("kill -9 "+pid);
-            return true;
-        }
-        return false;
+        return (pid != 0 && remoteRunner.runCommand("kill -9 "+pid));
     }
 
     public int getProcessPid (ShellRunner remoteRunner, String filename) throws MyException {

@@ -2,6 +2,7 @@ package org.shelltest.service.mapper;
 
 import java.util.List;
 import org.apache.ibatis.annotations.Param;
+import org.shelltest.service.dto.StatisticEntity;
 import org.shelltest.service.entity.History;
 import org.shelltest.service.entity.HistoryExample;
 import org.springframework.stereotype.Repository;
@@ -26,6 +27,8 @@ public interface HistoryMapper {
 
     List<History> selectNotRead(Integer limit);
     List<History> selectAlreadyRead(Integer limit);
+
+    List<StatisticEntity> getStatisticList(@Param("from")String from, @Param("to")String to);
 
     int updateByExampleSelective(@Param("record") History record, @Param("example") HistoryExample example);
 

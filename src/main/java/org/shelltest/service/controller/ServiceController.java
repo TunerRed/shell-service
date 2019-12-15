@@ -1,12 +1,16 @@
 package org.shelltest.service.controller;
 
+import org.apache.ibatis.annotations.Param;
 import org.jetbrains.annotations.NotNull;
 import org.shelltest.service.dto.BuildDTO;
 import org.shelltest.service.dto.EurekaDTO;
+import org.shelltest.service.entity.History;
 import org.shelltest.service.entity.Property;
 import org.shelltest.service.entity.PropertyExample;
 import org.shelltest.service.entity.ServiceArgs;
+import org.shelltest.service.exception.MockException;
 import org.shelltest.service.exception.MyException;
+import org.shelltest.service.mapper.HistoryMapper;
 import org.shelltest.service.mapper.PropertyMapper;
 import org.shelltest.service.mapper.ServiceArgsMapper;
 import org.shelltest.service.services.*;
@@ -21,6 +25,7 @@ import org.springframework.web.multipart.MultipartFile;
 import javax.servlet.http.HttpServletRequest;
 import java.io.File;
 import java.io.IOException;
+import java.util.Date;
 import java.util.LinkedList;
 import java.util.List;
 
@@ -54,7 +59,12 @@ public class ServiceController {
     @Autowired
     StartAppService startAppService;
     @Autowired
+    DeployLogUtil deployUtil;
+
+    @Autowired
     ServiceArgsMapper serviceArgsMapper;
+    @Autowired
+    HistoryMapper historyMapper;
 
     @GetMapping("/getServerList")
     public ResponseEntity getServerList() {
@@ -100,6 +110,61 @@ public class ServiceController {
         }
         remoteRunner.exit();
         return new ResponseBuilder().putItem("list", eurekaDTOList).getResponseEntity();
+    }
+
+    @GetMapping("/stop")
+    public ResponseEntity stopService(@NotNull@Param("serverIP")String serverIP,
+                                      @NotNull@Param("name")String filename, @NotNull@Param("pid")int pid) throws MyException, MockException {
+        logger.info("杀进程：/service/stop");
+        // todo 起进程和杀进程接口未测试
+        ShellRunner remoteRunner = new ShellRunner(serverIP, propertyService);
+        remoteRunner.login();
+        int runningPid = startAppService.getProcessPid(remoteRunner, filename);
+        if (runningPid == pid && startAppService.killService(remoteRunner, filename))
+            return new ResponseBuilder().getResponseEntity();
+        throw new MyException(Constant.ResultCode.ARGS_ERROR, "未找到指定进程或杀进程失败\n文件【"+filename
+                +"】 指定的pid:"+pid+" 查询到的pid:"+runningPid+"\n"+remoteRunner.getError());
+    }
+
+    @GetMapping("/start")
+    public ResponseEntity startService(@NotNull@Param("serverIP")String serverIP, @NotNull@Param("name")String filename) throws MyException, MockException {
+        logger.info("启动进程：/service/start");
+        // todo 起进程记录在history中不合适
+//        throw new MockException();
+        List<Property> serverInfo = propertyService.getServerInfo(serverIP);
+        String serviceArgs =
+                String.join(" ", serviceArgsMapper.getArgsWithDefault(serverIP, filename));
+        ShellRunner remoteRunner = new ShellRunner(serverIP, propertyService, serverInfo);
+        remoteRunner.login();
+        History deployLog = deployUtil.createLogEntity(serverIP);
+        StringBuffer result = new StringBuffer();
+        result.append("类型：启动服务\n-------------------\n");
+        if (startAppService.killService(remoteRunner, filename))
+            result.append("杀进程\n");
+        new Thread(()->{
+            try {
+                if (startAppService.startService(remoteRunner, filename,
+                        propertyService.getValueByType(serverInfo, Constant.PropertyType.RUN_PATH), serviceArgs,
+                        propertyService.getValueByType(serverInfo, Constant.PropertyType.LOG_PATH))) {
+                    result.append("启动成功:"+remoteRunner.getResult().toString());
+                } else {
+                    result.append("启动失败\n");
+                }
+                result.append("错误信息："+remoteRunner.getError());
+            } catch (MyException e) {
+                result.append("启动异常："+e.getMessage());
+                logger.error(e.getMessage());
+            } catch (Exception e) {
+                result.append("意外的异常"+e.getMessage());
+                e.printStackTrace();
+            }
+            result.append("\n---------------\n");
+            deployLog.setResult(result.toString());
+            deployLog.setEndTime(new Date());
+            historyMapper.insertSelective(deployLog);
+            logger.info("----- 服务启动完成，已存储记录 -----");
+        }).start();
+        return new ResponseBuilder().getResponseEntity();
     }
 
     @GetMapping("/getServiceList")
@@ -154,7 +219,7 @@ public class ServiceController {
         List<String> prefixList = propertyService.getAppPrefixList();
         List<String> suffixList = propertyService.getAppSuffixList();
         for (int i = 0; i < files.length; i++) {
-            File dest = new File(jarPath+"/"+username+"/"+ RenameUtil.getRename(files[i].getOriginalFilename(), prefixList, suffixList)+".jar");
+            File dest = new File(jarPath+"/"+username+"/"+ OtherUtil.getRename(files[i].getOriginalFilename(), prefixList, suffixList)+".jar");
             try {
                 logger.debug("重命名文件到："+dest);
                 files[i].transferTo(dest);
