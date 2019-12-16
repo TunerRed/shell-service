@@ -114,9 +114,8 @@ public class ServiceController {
 
     @GetMapping("/stop")
     public ResponseEntity stopService(@NotNull@Param("serverIP")String serverIP,
-                                      @NotNull@Param("name")String filename, @NotNull@Param("pid")int pid) throws MyException, MockException {
+                                      @NotNull@Param("name")String filename, @NotNull@Param("pid")int pid) throws MyException {
         logger.info("杀进程：/service/stop");
-        // todo 起进程和杀进程接口未测试
         ShellRunner remoteRunner = new ShellRunner(serverIP, propertyService);
         remoteRunner.login();
         int runningPid = startAppService.getProcessPid(remoteRunner, filename);
@@ -127,10 +126,9 @@ public class ServiceController {
     }
 
     @GetMapping("/start")
-    public ResponseEntity startService(@NotNull@Param("serverIP")String serverIP, @NotNull@Param("name")String filename) throws MyException, MockException {
+    public ResponseEntity startService(@NotNull@Param("serverIP")String serverIP, @NotNull@Param("name")String filename) throws MyException {
         logger.info("启动进程：/service/start");
         // todo 起进程记录在history中不合适
-//        throw new MockException();
         List<Property> serverInfo = propertyService.getServerInfo(serverIP);
         String serviceArgs =
                 String.join(" ", serviceArgsMapper.getArgsWithDefault(serverIP, filename));
