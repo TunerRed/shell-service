@@ -206,35 +206,40 @@ public class ServiceController {
         logger.info("/service/uploadServices");
         for (int i = 0; i < files.length; i++) {
             if (files[i].isEmpty())
-                throw new MyException(Constant.ResultCode.ARGS_ERROR, "莫得文件内容:"+files[i].getOriginalFilename());
+                throw new MyException(Constant.ResultCode.FILE_EXCEED, "莫得文件内容:"+files[i].getOriginalFilename());
         }
-        ShellRunner shellRunner = new ShellRunner(localURL, localUsername, localPassword);
-        shellRunner.login();
-        // 清除jar目录下以往的jar包
-        String username = loginAuth.getUser(request.getHeader(Constant.RequestArg.Auth));
-        // 用户一对一专属部署文件夹，发生冲突说明你被盗号了
-        shellRunner.runCommand("rm -rf "+jarPath+"/"+username);
-        shellRunner.runCommand("mkdir -p "+jarPath+"/"+username);
-        List<String> prefixList = propertyService.getAppPrefixList();
-        List<String> suffixList = propertyService.getAppSuffixList();
         List<String> nameList = new LinkedList<>();
-        for (int i = 0; i < files.length; i++) {
-            String filename = OtherUtil.getRename(files[i].getOriginalFilename(), prefixList, suffixList)+".jar";
-            File dest = new File(jarPath+"/"+username+"/"+ filename);
-            try {
-                logger.debug("重命名文件到："+dest);
-                files[i].transferTo(dest);
-                nameList.add(filename);
-            } catch (IOException e) {
-                // 一般不会发生
-                logger.error("后端保存文件失败："+e.getMessage());
-                throw new MyException(Constant.ResultCode.FILE_EXCEED, "写文件失败，确认后端服务器有足够内存");
+        try {
+            ShellRunner shellRunner = new ShellRunner(localURL, localUsername, localPassword);
+            shellRunner.login();
+            // 清除jar目录下以往的jar包
+            String username = loginAuth.getUser(request.getHeader(Constant.RequestArg.Auth));
+            // 用户一对一专属部署文件夹，发生冲突说明你被盗号了
+            shellRunner.runCommand("rm -rf "+jarPath+"/"+username);
+            shellRunner.runCommand("mkdir -p "+jarPath+"/"+username);
+            List<String> prefixList = propertyService.getAppPrefixList();
+            List<String> suffixList = propertyService.getAppSuffixList();
+            for (int i = 0; i < files.length; i++) {
+                String filename = OtherUtil.getRename(files[i].getOriginalFilename(), prefixList, suffixList)+".jar";
+                File dest = new File(jarPath+"/"+username+"/"+ filename);
+                try {
+                    logger.debug("重命名文件到："+dest);
+                    files[i].transferTo(dest);
+                    nameList.add(filename);
+                } catch (IOException e) {
+                    // 一般不会发生
+                    logger.error("后端保存文件失败："+e.getMessage());
+                    throw new MyException(Constant.ResultCode.FILE_EXCEED, "写文件失败，确认后端服务器有足够内存");
+                }
             }
+            logger.info("文件已上传至："+jarPath+"/"+username);
+            shellRunner.exit();
+            logger.info("文件重命名完成");
+            logger.info("文件上传结束");
+        } catch (MyException e) {
+            e.setResultCode(Constant.ResultCode.FILE_EXCEED);
+            throw e;
         }
-        logger.info("文件已上传至："+jarPath+"/"+username);
-        shellRunner.exit();
-        logger.info("文件重命名完成");
-        logger.info("文件上传结束");
         return new ResponseBuilder().setData(nameList).getResponseEntity();
     }
 }

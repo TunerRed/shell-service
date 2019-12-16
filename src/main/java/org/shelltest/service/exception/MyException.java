@@ -10,4 +10,8 @@ public class MyException extends Exception {
     public int getResultCode() {
         return resultCode;
     }
+
+    public void setResultCode(int resultCode) {
+        this.resultCode = resultCode;
+    }
 }

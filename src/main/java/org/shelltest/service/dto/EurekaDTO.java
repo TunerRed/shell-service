@@ -18,10 +18,10 @@ public class EurekaDTO {
     int port = 0;
 
     // actuator信息，从接口获取
-    String actuator = "developing：{'git':{'branch':'master','commit':{'id':'bbd1dd0','time':1575885315.000000000}}}";
+    String actuator = "developing：{'git':{'branch':'master','commit':{'id':'ffffff','time':100.00}}}";
 
     // 启动日期，从进程获取
-    String startTime = "00-00";
+    String startTime = "未启动";
 
     // 内存占用
     String mem;
