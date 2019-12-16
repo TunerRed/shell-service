@@ -86,13 +86,15 @@ public class EurekaDTO {
         // pid/内存占用/启动月份/启动日期/jar包路径及包名
         if (remoteRunner == null || filename == null || filename.isEmpty())
             return;
-        if (remoteRunner.runCommand("ps -eo pid,%mem,start,cmd|egrep [j]ava|egrep /"+filename+"-[0-9]{4}.jar$" +
-                "|awk '{print $1,$2,$3,$4,$NF}'") && remoteRunner.getResult() != null) {
+        if (remoteRunner.runCommand("ps -eo pid,%mem,cmd|grep [j]ava|grep -E /"+filename+"-[0-9]{4}.jar$" +
+                "|awk '{print $1,$2}'") && remoteRunner.getResult() != null) {
             String[] info = remoteRunner.getResult().get(0).split(" ");
-            if (info!=null && info.length==5) {
-                // setPid(Integer.parseInt(info[0]));
+            if (info!=null) {
+                setPid(Integer.parseInt(info[0]));
                 setMem(info[1]);
-                setStartTime(info[2]+"-"+info[3]);
+                // 根据pid获取启动时间，以24小时为界有两种显示格式，所以把输出内容pid以外的内容全部作为startTime
+                remoteRunner.runCommand("ps -eo pid,start|grep -v [g]rep|grep "+getPid()+" |awk '{$1=null;print $0}'");
+                setStartTime(String.join("-", remoteRunner.getResultArray()));
             }
         }
     }

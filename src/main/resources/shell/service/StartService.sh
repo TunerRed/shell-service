@@ -26,7 +26,7 @@ fi
 
 APP_log="$Log_path/${APP_file%.jar}.log"
 CMD="nohup java -jar $APP_args $APP_path/$APP_file >$APP_log 2>&1 &"
-echo "$CMD"
+#echo "$CMD"
 eval "$CMD"
 
 tail_count=0
@@ -43,7 +43,8 @@ while true ; do
     sleep $tail_gap
     let tail_count++
   else
-    cat $APP_log | grep "INFO" | grep "Started"
+    START_info=`cat $APP_log | grep "INFO" | grep "Started"`
+    echo "${START_info#*INFO}"
     rm -r $APP_log
     exit 0
   fi 

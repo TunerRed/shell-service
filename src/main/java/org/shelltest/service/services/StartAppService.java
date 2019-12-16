@@ -50,7 +50,7 @@ public class StartAppService {
     }
 
     public int getProcessPid (ShellRunner remoteRunner, String filename) throws MyException {
-        if (remoteRunner.runCommand("ps -ef | grep [j]ava | grep -E \""+filename+"-[0-9]{4}.jar$\" | awk '{print $2}'")
+        if (remoteRunner.runCommand("ps -ef | grep [j]ava | grep -E /"+filename+"-[0-9]{4}.jar$ | awk '{print $2}'")
                 && remoteRunner.getResult() != null) {
             String pid = remoteRunner.getResult().get(0);
             return Integer.parseInt(pid);

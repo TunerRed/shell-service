@@ -139,6 +139,7 @@ public class ServiceController {
         History deployLog = deployUtil.createLogEntity(serverIP);
         StringBuffer result = new StringBuffer();
         result.append("类型：启动服务\n-------------------\n");
+        uploadService.uploadScript(remoteRunner, "StartService.sh", "service");
         if (startAppService.killService(remoteRunner, filename))
             result.append("杀进程\n");
         new Thread(()->{
@@ -146,7 +147,7 @@ public class ServiceController {
                 if (startAppService.startService(remoteRunner, filename,
                         propertyService.getValueByType(serverInfo, Constant.PropertyType.RUN_PATH), serviceArgs,
                         propertyService.getValueByType(serverInfo, Constant.PropertyType.LOG_PATH))) {
-                    result.append("启动成功:"+remoteRunner.getResult().toString());
+                    result.append("启动成功:"+remoteRunner.getResult().toString()+"\n");
                 } else {
                     result.append("启动失败\n");
                 }
