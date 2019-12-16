@@ -86,7 +86,7 @@ public class PropertyService {
         for (int i = 0; i < list.size(); i++) {
             String[] wordList = list.get(i).split(" ");
             for (int j = 0; j < wordList.length; j++) {
-                retList.add(wordList[i]);
+                retList.add(wordList[j]);
             }
         }
         return retList;

@@ -217,11 +217,14 @@ public class ServiceController {
         shellRunner.runCommand("mkdir -p "+jarPath+"/"+username);
         List<String> prefixList = propertyService.getAppPrefixList();
         List<String> suffixList = propertyService.getAppSuffixList();
+        List<String> nameList = new LinkedList<>();
         for (int i = 0; i < files.length; i++) {
-            File dest = new File(jarPath+"/"+username+"/"+ OtherUtil.getRename(files[i].getOriginalFilename(), prefixList, suffixList)+".jar");
+            String filename = OtherUtil.getRename(files[i].getOriginalFilename(), prefixList, suffixList)+".jar";
+            File dest = new File(jarPath+"/"+username+"/"+ filename);
             try {
                 logger.debug("重命名文件到："+dest);
                 files[i].transferTo(dest);
+                nameList.add(filename);
             } catch (IOException e) {
                 // 一般不会发生
                 logger.error("后端保存文件失败："+e.getMessage());
@@ -232,6 +235,6 @@ public class ServiceController {
         shellRunner.exit();
         logger.info("文件重命名完成");
         logger.info("文件上传结束");
-        return new ResponseBuilder().getResponseEntity();
+        return new ResponseBuilder().setData(nameList).getResponseEntity();
     }
 }
