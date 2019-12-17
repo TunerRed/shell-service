@@ -19,12 +19,19 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.core.io.FileSystemResource;
+import org.springframework.core.io.InputStreamResource;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
+import javax.annotation.Resource;
 import javax.servlet.http.HttpServletRequest;
 import java.io.File;
 import java.io.IOException;
+import java.io.UnsupportedEncodingException;
+import java.net.URLEncoder;
 import java.util.Date;
 import java.util.LinkedList;
 import java.util.List;
@@ -170,6 +177,58 @@ public class ServiceController {
     public ResponseEntity getServiceList(String serverIP) {
         logger.info("/service/getServiceList");
         return new ResponseBuilder().getResponseEntity();
+    }
+
+    /**
+     * 下载服务包.
+     * @param serverIP 目标主句
+     * @param filename 运行路径下的文件
+     * @return 下载文件
+     * */
+    @GetMapping("/download")
+    public org.springframework.http.ResponseEntity downloadService(@NotNull@Param("serverIP")String serverIP, @NotNull@Param("filename")String filename) throws MyException {
+        logger.info("文件下载:/service/download");
+        Long len = null;
+        InputStreamResource res = null;
+        HttpHeaders headers = new HttpHeaders();
+        filename = filename.substring(filename.lastIndexOf('/') + 1);
+        List<Property> serverInfo = propertyService.getServerInfo(serverIP);
+
+        // 清空本地的下载目录
+        ShellRunner localRunner = new ShellRunner(localURL, localUsername, localPassword);
+        localRunner.login();
+        localRunner.runCommand("rm -rf "+jarPath+"/download/*");
+        localRunner.exit();
+
+        ShellRunner remoteRunner = new ShellRunner(serverIP, propertyService, serverInfo);
+        remoteRunner.login();
+        uploadService.downloadFile(remoteRunner, jarPath+"/download",
+                propertyService.getValueByType(serverInfo, Constant.PropertyType.RUN_PATH), filename);
+        File file = new File(jarPath+"/download/"+filename);
+        if (!file.exists() || !file.canRead()) {
+            remoteRunner.exit();
+            throw new MyException(Constant.ResultCode.NOT_FOUND, "不可读取的本地文件");
+        } else {
+            try {
+                headers.add("Cache-Control","no-cache,no-store,must-revalidate");
+                headers.add("Pragma", "no-cache");
+                headers.add("Expires", "0");
+                headers.add("Content-Disposition", "attachment;filename=" + URLEncoder.encode(file.getName(), "UTF-8"));
+                FileSystemResource f = new FileSystemResource(file);
+                res = new InputStreamResource(f.getInputStream());
+                len = f.contentLength();
+            } catch (UnsupportedEncodingException e) {
+                logger.error("文件名编码转换错误 "+e.getMessage());
+                throw new MyException(Constant.ResultCode.ARGS_ERROR, "文件名编码转换错误 "+e.getMessage());
+            } catch (IOException e) {
+                e.printStackTrace();
+                throw new MyException(Constant.ResultCode.INTERNAL_ERROR, "文件下载错误 "+e.getMessage());
+            } finally {
+                remoteRunner.exit();
+            }
+        }
+        return org.springframework.http.ResponseEntity.ok().headers(headers).contentLength(len)
+                .contentType(MediaType.APPLICATION_OCTET_STREAM).body(res);
     }
 
     @PostMapping("/deployFromGit")

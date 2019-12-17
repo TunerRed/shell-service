@@ -118,4 +118,18 @@ public class UploadService {
             throw new MyException(Constant.ResultCode.LOGIN_FAILED, "scp上传失败:"+e.getMessage());
         }
     }
+
+    public void downloadFile(ShellRunner shellRunner, String localPath, String remotePath, String remoteFile) throws MyException {
+        try {
+            File dir = new File(localPath);
+            if (!dir.exists()) {
+                dir.mkdirs();
+            }
+            SCPClient scpClient = shellRunner.getConn().createSCPClient();
+            scpClient.get(remotePath+"/"+remoteFile,localPath);
+        } catch (IOException e) {
+            logger.error("远程下载文件失败:"+e.getMessage());
+            throw new MyException(Constant.ResultCode.LOGIN_FAILED, "远程下载文件失败:"+e.getMessage());
+        }
+    }
 }
