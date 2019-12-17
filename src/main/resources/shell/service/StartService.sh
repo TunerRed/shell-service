@@ -45,7 +45,7 @@ while true ; do
   else
     START_info=`cat $APP_log | grep "INFO" | grep "Started"`
     echo "${START_info#*INFO}"
-    rm -r $APP_log
+    #rm -r $APP_log
     exit 0
   fi 
   if [ $tail_count -ge $tail_max ] ; then
