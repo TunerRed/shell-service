@@ -17,6 +17,7 @@ Log_path="`pwd`/$4"
 mkdir -p $APP_path
 mkdir -p $Log_path
 cd $APP_path
+APP_log="$Log_path/$APP_file.log"
 APP_file=`ls -r | egrep "^$APP_file-[0-9]{4}.jar$" | awk 'NR==1'`
 
 if [ ! -e $APP_path/$APP_file ] ; then
@@ -24,7 +25,6 @@ if [ ! -e $APP_path/$APP_file ] ; then
   exit 1
 fi 
 
-APP_log="$Log_path/${APP_file%.jar}.log"
 CMD="nohup java -jar $APP_args $APP_path/$APP_file >$APP_log 2>&1 &"
 #echo "$CMD"
 eval "$CMD"
