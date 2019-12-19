@@ -32,6 +32,7 @@ import java.io.File;
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import java.net.URLEncoder;
+import java.util.Arrays;
 import java.util.Date;
 import java.util.LinkedList;
 import java.util.List;
@@ -76,8 +77,9 @@ public class ServiceController {
     @GetMapping("/getServerList")
     public ResponseEntity getServerList() {
         logger.info("/service/getServerList");
-        List<String> list = propertyService.getValueListByKeys(Constant.PropertyType.IP, Constant.PropertyKey.SERVICE);
-        return new ResponseBuilder().putItem("list",list).getResponseEntity();
+        List<String> authServers = OtherUtil.getGrantedServerList(propertyService, Constant.PropertyKey.SERVICE,
+                loginAuth.getUser(request.getHeader(Constant.RequestArg.Auth)));
+        return new ResponseBuilder().putItem("list",authServers).getResponseEntity();
     }
 
     @GetMapping("/getEurekaList")

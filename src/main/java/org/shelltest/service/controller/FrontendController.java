@@ -18,8 +18,10 @@ import org.springframework.web.bind.annotation.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import javax.servlet.http.HttpServletRequest;
 import javax.validation.Valid;
 import java.util.ArrayList;
+import java.util.LinkedList;
 import java.util.List;
 
 @RestController
@@ -33,6 +35,10 @@ public class FrontendController {
     BuildAppService buildAppService;
     @Autowired
     RepoService repoService;
+    @Autowired
+    LoginAuth loginAuth;
+    @Autowired
+    HttpServletRequest request;
 
 
     @Autowired
@@ -56,13 +62,11 @@ public class FrontendController {
      * */
     @GetMapping("/getServerList")
     public ResponseEntity getServerList() {
-        PropertyExample example = new PropertyExample();
-        example.setDistinct(true);
-        example.setOrderByClause("seq");
-        example.createCriteria().andTypeEqualTo(Constant.PropertyType.IP)
-                .andKeyEqualTo(Constant.PropertyKey.FRONTEND);
-        List<String> list = propertyMapper.selectValueByExample(example);
-        return new ResponseBuilder().putItem("list",list).getResponseEntity();
+        logger.info("/frontend/getServerList");
+
+        List<String> authServers = OtherUtil.getGrantedServerList(propertyService, Constant.PropertyKey.FRONTEND,
+                        loginAuth.getUser(request.getHeader(Constant.RequestArg.Auth)));
+        return new ResponseBuilder().putItem("list",authServers).getResponseEntity();
     }
 
     /**

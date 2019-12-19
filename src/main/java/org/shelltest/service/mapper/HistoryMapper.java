@@ -27,6 +27,7 @@ public interface HistoryMapper {
 
     List<History> selectNotRead(Integer limit);
     List<History> selectAlreadyRead(Integer limit);
+    List<History> selectMessage(Integer limit);
 
     List<StatisticEntity> getStatisticList(@Param("from")String from, @Param("to")String to);
 

@@ -24,7 +24,13 @@ public class PropertyService {
         PropertyExample serverExample = new PropertyExample();
         serverExample.createCriteria().andTypeEqualTo(type).andKeyEqualTo(key);
         List<Property> list = propertyMapper.selectByExample(serverExample);
-        return (list==null||list.size()==0)?null:list.get(0);
+        return (list == null || list.isEmpty()) ? null : list.get(0);
+    }
+    public List<Property> getPropertyListByKeys (String type, String key) {
+        PropertyExample serverExample = new PropertyExample();
+        serverExample.createCriteria().andTypeEqualTo(type).andKeyEqualTo(key);
+        List<Property> list = propertyMapper.selectByExample(serverExample);
+        return (list==null||list.size()==0)?null:list;
     }
 
     /**
@@ -35,7 +41,7 @@ public class PropertyService {
      * */
     public List<String> getValueListByKeys (String type, String key) {
         PropertyExample serverExample = new PropertyExample();
-        serverExample.createCriteria().andTypeEqualTo(type).andKeyEqualTo(key);
+        serverExample.createCriteria().andTypeEqualTo(type).andKeyEqualTo(key).andValIsNotNull();
         List<String> list = propertyMapper.selectValueByExample(serverExample);
         return (list==null||list.size()==0)?null:list;
     }
@@ -71,6 +77,20 @@ public class PropertyService {
         serverInfoExample.createCriteria().andKeyEqualTo(serverIP);
         List<Property> serverInfo = propertyMapper.selectByExample(serverInfoExample);
         return (serverInfo==null||serverInfo.isEmpty())?null:serverInfo;
+    }
+
+    public List<String> getServerListBySeqList (String key, List<Integer> seqList) {
+        PropertyExample serverExample = new PropertyExample();
+        serverExample.createCriteria().andTypeEqualTo(Constant.PropertyType.IP).andKeyEqualTo(key)
+                .andSeqIn(seqList);
+        List<Property> properties = propertyMapper.selectByExample(serverExample);
+        if (properties == null)
+            return null;
+        List<String> list = new LinkedList<>();
+        for (int i = 0; i < properties.size(); i++) {
+            list.add(properties.get(i).getVal());
+        }
+        return list.isEmpty()?null:list;
     }
 
     public List<String> getAppPrefixList() {

@@ -2,6 +2,7 @@ package org.shelltest.service.controller;
 
 import org.shelltest.service.dto.StatisticEntity;
 import org.shelltest.service.entity.History;
+import org.shelltest.service.entity.HistoryExample;
 import org.shelltest.service.entity.Property;
 import org.shelltest.service.exception.LoginException;
 import org.shelltest.service.mapper.HistoryMapper;
@@ -34,17 +35,18 @@ public class CommonController {
     @GetMapping("/message-list")
     public ResponseEntity getDeployMessage() {
         logger.info("/common/message-list");
-        int notReadCount = 0;
-        List<History> totalList = historyMapper.selectNotRead(20);
-        List<History> readList = null;
-        if (totalList == null) {
-            totalList = new LinkedList<>();
-        }
-        notReadCount = totalList.size();
-        if (notReadCount < 10) {
-            readList = historyMapper.selectAlreadyRead(10 - notReadCount);
-            totalList.addAll(readList);
-        }
+        List<History> totalList = historyMapper.selectMessage(20);
+//        int notReadCount = 0;
+//        List<History> totalList = historyMapper.selectNotRead(20);
+//        List<History> readList = null;
+//        if (totalList == null) {
+//            totalList = new LinkedList<>();
+//        }
+//        notReadCount = totalList.size();
+//        if (notReadCount < 10) {
+//            readList = historyMapper.selectAlreadyRead(10 - notReadCount);
+//            totalList.addAll(readList);
+//        }
         return new ResponseBuilder().setData(totalList).getResponseEntity();
     }
 

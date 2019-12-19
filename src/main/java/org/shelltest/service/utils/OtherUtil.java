@@ -1,7 +1,10 @@
 package org.shelltest.service.utils;
 
+import org.shelltest.service.entity.Property;
+import org.shelltest.service.services.PropertyService;
 import java.text.SimpleDateFormat;
 import java.util.Calendar;
+import java.util.LinkedList;
 import java.util.List;
 
 public class OtherUtil {
@@ -51,5 +54,18 @@ public class OtherUtil {
                 if (rename.endsWith(suffixList.get(i)))
                     rename = rename.substring(0, rename.length() - suffixList.get(i).length());
         return rename;
+    }
+
+    public static List<String> getGrantedServerList(PropertyService propertyService, String key,  String username) {
+        Property authServers = propertyService.getPropertyByKeys(Constant.PropertyType.GRANT, username);
+        if (authServers == null || authServers.getVal() == null || authServers.getVal().isEmpty())
+            return null;
+        String[] seqStringList = authServers.getVal().split(",");
+        List<Integer> seqList = new LinkedList<>();
+        for (int i = 0; i < seqStringList.length; i++) {
+            seqList.add(Integer.parseInt(seqStringList[i]));
+        }
+        List<String> list = propertyService.getServerListBySeqList(key, seqList);
+        return (list == null || list.isEmpty()) ? null : list;
     }
 }

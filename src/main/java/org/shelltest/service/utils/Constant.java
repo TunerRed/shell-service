@@ -25,7 +25,8 @@ public class Constant {
             LOG_PATH = "LOG_PATH",
             USERNAME = "SERVER_USER",
             PASSWORD = "SERVER_PASS",
-            JAR_RENAME = "RENAME";
+            JAR_RENAME = "RENAME",
+            GRANT = "GRANT";
     }
     public class PropertyKey {
         public static final String

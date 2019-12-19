@@ -137,6 +137,13 @@
     from deploy_history
     where `is_read` = '1' order by `message_id` desc limit #{limit,jdbcType=INTEGER}
   </select>
+  <select id="selectMessage" resultMap="ResultMapWithBLOBs" parameterType="java.lang.Integer" >
+    select
+    <include refid="Base_Column_List" />
+    ,
+    <include refid="Blob_Column_List" />
+    from deploy_history order by `message_id` desc limit #{limit,jdbcType=INTEGER}
+  </select>
 
   <select id="getStatisticList" resultMap="StatisticResultMap">
     SELECT DATE(start_time) AS `date`,count(0) AS `rate`
