@@ -6,15 +6,20 @@ package org.shelltest.service.utils;
 public class Constant {
     public class ResultCode {
         public static final int
-            SUCCESS = 200,
-            INTERNAL_ERROR = 500,
-            LOGIN_FAILED = 101,
-            USER_LOGIN_FAILED = 102,
-            DEVELOPING = 501,
-            NOT_FOUND = 404,
-            ARGS_ERROR = 412,
-            FILE_EXCEED = 120,
-            SHELL_ERROR = 1551;
+        SUCCESS = 200,
+
+        LOGIN_FAILED = 101,
+        USER_LOGIN_FAILED = 102,
+        FILE_ERROR = 120,
+
+        NOT_GRANT = 401,
+        NOT_FOUND = 404,
+
+        INTERNAL_ERROR = 500,
+        DEVELOPING = 501,
+
+        ARGS_ERROR = 1551,
+        SHELL_ERROR = 1552;
     }
     public class PropertyType {
         public static final String
@@ -25,8 +30,7 @@ public class Constant {
             LOG_PATH = "LOG_PATH",
             USERNAME = "SERVER_USER",
             PASSWORD = "SERVER_PASS",
-            JAR_RENAME = "RENAME",
-            GRANT = "GRANT";
+            JAR_RENAME = "RENAME";
     }
     public class PropertyKey {
         public static final String
@@ -38,5 +42,9 @@ public class Constant {
     public class RequestArg {
         public static final String
             Auth = "Authorization";
+    }
+    public class SQLEnum {
+        public static final String
+            ROOT_USER = "1";
     }
 }

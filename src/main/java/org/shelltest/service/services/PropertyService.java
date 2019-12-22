@@ -1,10 +1,13 @@
 package org.shelltest.service.services;
 
+import org.shelltest.service.dto.ServerDTO;
 import org.shelltest.service.entity.Property;
 import org.shelltest.service.entity.PropertyExample;
 import org.shelltest.service.exception.MyException;
 import org.shelltest.service.mapper.PropertyMapper;
 import org.shelltest.service.utils.Constant;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -13,6 +16,8 @@ import java.util.List;
 
 @Service
 public class PropertyService {
+
+    Logger logger = LoggerFactory.getLogger(this.getClass());
 
     @Autowired
     PropertyMapper propertyMapper;
@@ -43,6 +48,13 @@ public class PropertyService {
         PropertyExample serverExample = new PropertyExample();
         serverExample.createCriteria().andTypeEqualTo(type).andKeyEqualTo(key).andValIsNotNull();
         List<String> list = propertyMapper.selectValueByExample(serverExample);
+        return (list==null||list.size()==0)?null:list;
+    }
+
+    public List<Property> getPropertyListByType (String type) {
+        PropertyExample serverExample = new PropertyExample();
+        serverExample.createCriteria().andTypeEqualTo(type).andValIsNotNull();
+        List<Property> list = propertyMapper.selectByExample(serverExample);
         return (list==null||list.size()==0)?null:list;
     }
 
@@ -110,5 +122,20 @@ public class PropertyService {
             }
         }
         return retList;
+    }
+
+    public void insertNewServer(ServerDTO server) {
+        PropertyExample example = new PropertyExample();
+        example.setOrderByClause("seq");
+        example.createCriteria().andTypeEqualTo(Constant.PropertyType.IP).andSeqIsNotNull();
+        List<Property> properties = propertyMapper.selectByExample(example);
+        int seq = 0;
+        if (properties != null) {
+            seq = properties.get(properties.size() - 1).getSeq() + 1;
+        }
+        Property property = new Property(Constant.PropertyType.IP, server.getType(), server.getIp());
+        property.setSeq(seq);
+        // todo 新插入一套配置
+//        propertyMapper.insertSelective(property);
     }
 }

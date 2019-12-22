@@ -1,13 +1,28 @@
 package org.shelltest.service.utils;
 
 import org.shelltest.service.entity.Property;
+import org.shelltest.service.entity.User;
+import org.shelltest.service.mapper.UserMapper;
+import org.shelltest.service.services.LoginAuth;
 import org.shelltest.service.services.PropertyService;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Component;
+
 import java.text.SimpleDateFormat;
 import java.util.Calendar;
 import java.util.LinkedList;
 import java.util.List;
 
+@Component
 public class OtherUtil {
+
+    @Autowired
+    UserMapper userMapper;
+    @Autowired
+    PropertyService propertyService;
+    @Autowired
+    LoginAuth loginAuth;
+
     private static final SimpleDateFormat defaultFormat = new SimpleDateFormat("yyyy-MM-dd");
     /**
      * 获取距离当前一定时间的日期.
@@ -16,7 +31,7 @@ public class OtherUtil {
      * @param dateFormat 返回的日期格式
      * @return 指定日期格式化后的字符串
      * */
-    public static String getFormatDateInMonth(int monthGap, int day, SimpleDateFormat dateFormat) {
+    public String getFormatDateInMonth(int monthGap, int day, SimpleDateFormat dateFormat) {
         Calendar calendar = Calendar.getInstance();
         calendar.add(Calendar.MONTH, monthGap);
         calendar.set(Calendar.DAY_OF_MONTH, day);
@@ -31,7 +46,7 @@ public class OtherUtil {
      * @param day 指定月的第几天
      * @return 指定日期按默认格式格式化后的字符串
      * */
-    public static String getFormatDateInMonth(int monthGap, int day) {
+    public String getFormatDateInMonth(int monthGap, int day) {
         return getFormatDateInMonth(monthGap, day, null);
     }
 
@@ -43,7 +58,7 @@ public class OtherUtil {
      * @param suffixList 待去除的后缀列表
      * @return 源字符串清除前缀后缀之后的字符串
      * */
-    public static String getRename(String originName, List<String> prefixList, List<String> suffixList) {
+    public String getRename(String originName, List<String> prefixList, List<String> suffixList) {
         String rename = originName;
         if (prefixList != null)
             for (int i = 0; i < prefixList.size(); i++)
@@ -56,11 +71,14 @@ public class OtherUtil {
         return rename;
     }
 
-    public static List<String> getGrantedServerList(PropertyService propertyService, String key,  String username) {
-        Property authServers = propertyService.getPropertyByKeys(Constant.PropertyType.GRANT, username);
-        if (authServers == null || authServers.getVal() == null || authServers.getVal().isEmpty())
+    public List<String> getGrantedServerList(String key) {
+        User user = userMapper.selectByPrimaryKey(loginAuth.getUsername());
+        if (user == null)
             return null;
-        String[] seqStringList = authServers.getVal().split(",");
+        String seq = user.getGrantServerSeq();
+        if (seq == null || seq.isEmpty())
+            return null;
+        String[] seqStringList = seq.split(",");
         List<Integer> seqList = new LinkedList<>();
         for (int i = 0; i < seqStringList.length; i++) {
             seqList.add(Integer.parseInt(seqStringList[i]));

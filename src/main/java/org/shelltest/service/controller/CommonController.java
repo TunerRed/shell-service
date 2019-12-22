@@ -4,8 +4,10 @@ import org.shelltest.service.dto.StatisticEntity;
 import org.shelltest.service.entity.History;
 import org.shelltest.service.entity.HistoryExample;
 import org.shelltest.service.entity.Property;
+import org.shelltest.service.entity.User;
 import org.shelltest.service.exception.LoginException;
 import org.shelltest.service.mapper.HistoryMapper;
+import org.shelltest.service.mapper.UserMapper;
 import org.shelltest.service.services.LoginAuth;
 import org.shelltest.service.services.PropertyService;
 import org.shelltest.service.utils.*;
@@ -28,7 +30,11 @@ public class CommonController {
     @Autowired
     LoginAuth loginAuth;
     @Autowired
+    OtherUtil otherUtil;
+    @Autowired
     HistoryMapper historyMapper;
+    @Autowired
+    UserMapper userMapper;
 
     Logger logger = LoggerFactory.getLogger(this.getClass());
 
@@ -53,8 +59,8 @@ public class CommonController {
     @GetMapping("/statistic")
     public ResponseEntity getStatistics() {
         logger.info("/common/statistic");
-        List<StatisticEntity> list = historyMapper.getStatisticList(OtherUtil.getFormatDateInMonth(-1,1),
-                OtherUtil.getFormatDateInMonth(1, 0));
+        List<StatisticEntity> list = historyMapper.getStatisticList(otherUtil.getFormatDateInMonth(-1,1),
+                otherUtil.getFormatDateInMonth(1, 0));
         return new ResponseBuilder().putItem("dateList", list).getResponseEntity();
     }
 
@@ -66,13 +72,12 @@ public class CommonController {
             throw new LoginException("登录失败，请重新登录");
         }
         else {
-            Property loginInfo = propertyService.getPropertyByKeys("LOGIN", username);
-            if (loginInfo == null)
+            User user = userMapper.selectByPrimaryKey(username);
+            if (user == null)
                 throw new LoginException(Constant.ResultCode.NOT_FOUND, "未注册的用户");
             String enc = EncUtil.encode(EncUtil.decodeUserPass(password.trim()));
-            if (!enc.equals(loginInfo.getVal()))
+            if (!enc.equals(user.getPassword()))
                 throw new LoginException(Constant.ResultCode.NOT_FOUND, "密码错误");
-            //logger.debug("登录成功，用户："+username+" "+Base64Utils.decode(loginInfo.getVal().getBytes()));
             token = loginAuth.createToken(username);
         }
         return new ResponseBuilder().putItem("token", token).putItem("expiration", loginAuth.getExpiration().getTime()).getResponseEntity();

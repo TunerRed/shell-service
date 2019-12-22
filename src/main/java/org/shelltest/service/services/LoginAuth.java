@@ -2,11 +2,14 @@ package org.shelltest.service.services;
 
 import io.jsonwebtoken.*;
 import org.shelltest.service.exception.LoginException;
+import org.shelltest.service.utils.Constant;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
+import javax.servlet.http.HttpServletRequest;
 import java.util.Date;
 
 @Service
@@ -20,6 +23,9 @@ public class LoginAuth {
     long expiresSeconds;
     @Value("${token.config.expiresMinutes}")
     int expiresMinutes;
+
+    @Autowired
+    HttpServletRequest request;
 
     Logger logger = LoggerFactory.getLogger(this.getClass());
 
@@ -80,5 +86,9 @@ public class LoginAuth {
             logger.error("token认证失败："+e.getMessage());
         }
         return username;
+    }
+
+    public String getUsername() {
+        return getUser(request.getHeader(Constant.RequestArg.Auth));
     }
 }

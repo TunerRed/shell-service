@@ -39,7 +39,7 @@ public class ErrorHandler {
 
     @ExceptionHandler(value = MaxUploadSizeExceededException.class)
     public ResponseEntity errorHandler (MaxUploadSizeExceededException e) {
-        return new ResponseBuilder().setCode(Constant.ResultCode.FILE_EXCEED).setMsg("文件大小超出限制:"+maxFileSize).getResponseEntity();
+        return new ResponseBuilder().setCode(Constant.ResultCode.FILE_ERROR).setMsg("文件大小超出限制:"+maxFileSize).getResponseEntity();
     }
 
     @ExceptionHandler(value = MockException.class)

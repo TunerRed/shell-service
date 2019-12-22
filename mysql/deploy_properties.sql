@@ -1,18 +1,3 @@
-/*
-Navicat MySQL Data Transfer
-
-Source Server         : 本地测试
-Source Server Version : 80018
-Source Host           : localhost:3306
-Source Database       : regulation
-
-Target Server Type    : MYSQL
-Target Server Version : 80018
-File Encoding         : 65001
-
-Date: 2019-12-02 12:36:33
-*/
-
 -- ----------------------------
 -- Table structure for deploy_properties
 -- ----------------------------
@@ -27,10 +12,6 @@ CREATE TABLE `deploy_properties` (
 -- ----------------------------
 -- Records of deploy_properties
 -- ----------------------------
--- 登录账户，密码使用密文
-INSERT INTO `deploy_properties` (`type`, `key`, `val`, `seq`) VALUES ('LOGIN', '111', 'TWpJeQ==', null);
--- 用户可部署服务器权限控制，数字为SERVER_IP的seq值，逗号隔开，需要保证所有的SERVER_IP对应的seq值都不同
-INSERT INTO `deploy_properties` (`type`, `key`, `val`, `seq`) VALUES ('GRANT', 'user1', '1,2,3', null);
 -- 前端配置，密码使用密文
 INSERT INTO `deploy_properties` (`type`, `key`, `val`, `seq`) VALUES ('SERVER_IP', 'FRONTEND', '192.168.0.2', '1');
 INSERT INTO `deploy_properties` (`type`, `key`, `val`, `seq`) VALUES ('SERVER_USER', '192.168.0.2', 'root', null);

@@ -45,7 +45,8 @@
         <!-- tableName="deploy_properties"  domainObjectName="Property" delimitAllColumns="true"></table>
         <table tableName="deploy_repository"  domainObjectName="Repo" delimitAllColumns="true"></table-->
         <!--table tableName="deploy_history"  domainObjectName="History" delimitAllColumns="true"></table-->
-        <table tableName="deploy_service_args"  domainObjectName="ServiceArgs" delimitAllColumns="true"></table>
+<!--        <table tableName="deploy_service_args"  domainObjectName="ServiceArgs" delimitAllColumns="true"></table>-->
+        <table tableName="deploy_users"  domainObjectName="User" delimitAllColumns="true"></table>
 
     </context>
 

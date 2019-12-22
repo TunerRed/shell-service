@@ -34,7 +34,9 @@ public class RepoService {
 
     public List<Repo> getRepositoryByType (String repoType) {
         RepoExample repositoryExample = new RepoExample();
-        repositoryExample.createCriteria().andRepoTypeEqualTo(repoType);
+        if (repoType != null) {
+            repositoryExample.createCriteria().andRepoTypeEqualTo(repoType);
+        }
         return repoMapper.selectByExample(repositoryExample);
     }
 

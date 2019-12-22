@@ -44,4 +44,11 @@ public class Property implements Serializable {
     public void setSeq(Integer seq) {
         this.seq = seq;
     }
+
+    public Property(String type,String key,String val) {
+        setType(type);
+        setKey(key);
+        setVal(val);
+    }
+    public Property() {}
 }

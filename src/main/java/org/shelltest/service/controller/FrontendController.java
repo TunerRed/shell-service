@@ -39,6 +39,8 @@ public class FrontendController {
     LoginAuth loginAuth;
     @Autowired
     HttpServletRequest request;
+    @Autowired
+    OtherUtil otherUtil;
 
 
     @Autowired
@@ -63,9 +65,7 @@ public class FrontendController {
     @GetMapping("/getServerList")
     public ResponseEntity getServerList() {
         logger.info("/frontend/getServerList");
-
-        List<String> authServers = OtherUtil.getGrantedServerList(propertyService, Constant.PropertyKey.FRONTEND,
-                        loginAuth.getUser(request.getHeader(Constant.RequestArg.Auth)));
+        List<String> authServers = otherUtil.getGrantedServerList(Constant.PropertyKey.FRONTEND);
         return new ResponseBuilder().putItem("list",authServers).getResponseEntity();
     }
 

@@ -68,6 +68,8 @@ public class ServiceController {
     StartAppService startAppService;
     @Autowired
     DeployLogUtil deployUtil;
+    @Autowired
+    OtherUtil otherUtil;
 
     @Autowired
     ServiceArgsMapper serviceArgsMapper;
@@ -77,8 +79,7 @@ public class ServiceController {
     @GetMapping("/getServerList")
     public ResponseEntity getServerList() {
         logger.info("/service/getServerList");
-        List<String> authServers = OtherUtil.getGrantedServerList(propertyService, Constant.PropertyKey.SERVICE,
-                loginAuth.getUser(request.getHeader(Constant.RequestArg.Auth)));
+        List<String> authServers = otherUtil.getGrantedServerList(Constant.PropertyKey.SERVICE);
         return new ResponseBuilder().putItem("list",authServers).getResponseEntity();
     }
 
@@ -267,7 +268,7 @@ public class ServiceController {
         logger.info("/service/uploadServices");
         for (int i = 0; i < files.length; i++) {
             if (files[i].isEmpty())
-                throw new MyException(Constant.ResultCode.FILE_EXCEED, "莫得文件内容:"+files[i].getOriginalFilename());
+                throw new MyException(Constant.ResultCode.FILE_ERROR, "莫得文件内容:"+files[i].getOriginalFilename());
         }
         List<String> nameList = new LinkedList<>();
         try {
@@ -281,7 +282,7 @@ public class ServiceController {
             List<String> prefixList = propertyService.getAppPrefixList();
             List<String> suffixList = propertyService.getAppSuffixList();
             for (int i = 0; i < files.length; i++) {
-                String filename = OtherUtil.getRename(files[i].getOriginalFilename(), prefixList, suffixList)+".jar";
+                String filename = otherUtil.getRename(files[i].getOriginalFilename(), prefixList, suffixList)+".jar";
                 File dest = new File(jarPath+"/"+username+"/"+ filename);
                 try {
                     logger.debug("重命名文件到："+dest);
@@ -290,7 +291,7 @@ public class ServiceController {
                 } catch (IOException e) {
                     // 一般不会发生
                     logger.error("后端保存文件失败："+e.getMessage());
-                    throw new MyException(Constant.ResultCode.FILE_EXCEED, "写文件失败，确认后端服务器有足够内存");
+                    throw new MyException(Constant.ResultCode.FILE_ERROR, "写文件失败，确认后端服务器有足够内存");
                 }
             }
             logger.info("文件已上传至："+jarPath+"/"+username);
@@ -298,7 +299,7 @@ public class ServiceController {
             logger.info("文件重命名完成");
             logger.info("文件上传结束");
         } catch (MyException e) {
-            e.setResultCode(Constant.ResultCode.FILE_EXCEED);
+            e.setResultCode(Constant.ResultCode.FILE_ERROR);
             throw e;
         }
         return new ResponseBuilder().setData(nameList).getResponseEntity();
