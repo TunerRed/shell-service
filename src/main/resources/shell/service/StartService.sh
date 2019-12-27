@@ -30,7 +30,7 @@ CMD="nohup java -jar $APP_args $APP_path/$APP_file >$APP_log 2>&1 &"
 eval "$CMD"
 
 tail_count=0
-tail_max=30
+tail_max=60
 tail_gap=1
 
 sleep 3

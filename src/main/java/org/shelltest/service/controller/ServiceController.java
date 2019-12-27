@@ -258,6 +258,56 @@ public class ServiceController {
         return new ResponseBuilder().getResponseEntity();
     }
 
+    @GetMapping("/clearUpload")
+    public ResponseEntity clearUploadDir() throws MyException {
+        logger.info("/service/clearUpload");
+        ShellRunner shellRunner = new ShellRunner(localURL, localUsername, localPassword);
+        shellRunner.login();
+        // 清除jar目录下以往的jar包
+        String username = loginAuth.getUser(request.getHeader(Constant.RequestArg.Auth));
+        shellRunner.runCommand("rm -rf "+jarPath+"/"+username);
+        shellRunner.runCommand("mkdir -p "+jarPath+"/"+username);
+        shellRunner.exit();
+        logger.info("清理旧文件完成");
+        return new ResponseBuilder().getResponseEntity();
+    }
+
+    /**
+     * 上传文件.
+     * 上传jar包
+     * @param file 要上传的jar文件
+     * */
+    @PostMapping("/uploadService")
+    public ResponseEntity uploadServiceJar(@RequestParam("file") MultipartFile file) throws MyException {
+        logger.info("/service/uploadService");
+        if (file.isEmpty() || !file.getOriginalFilename().endsWith(".jar"))
+            throw new MyException(Constant.ResultCode.FILE_ERROR, "文件错误:"+file.getOriginalFilename());
+        String filename = "";
+        try {
+            // 清除jar目录下以往的jar包
+            String username = loginAuth.getUser(request.getHeader(Constant.RequestArg.Auth));
+            List<String> prefixList = propertyService.getAppPrefixList();
+            List<String> suffixList = propertyService.getAppSuffixList();
+            filename = otherUtil.getRename(file.getOriginalFilename(), prefixList, suffixList)+".jar";
+            File dest = new File(jarPath+"/"+username+"/"+ filename);
+            try {
+                logger.debug("重命名文件到："+dest);
+                dest.mkdirs();
+                file.transferTo(dest);
+                logger.info("文件已上传至："+jarPath+"/"+username);
+            } catch (IOException e) {
+                // 一般不会发生
+                logger.error("后端保存文件失败："+e.getMessage());
+                throw new MyException(Constant.ResultCode.FILE_ERROR, "写文件失败，确认后端服务器有足够内存");
+            }
+            logger.info("文件上传结束");
+        } catch (MyException e) {
+            e.setResultCode(Constant.ResultCode.FILE_ERROR);
+            throw e;
+        }
+        return new ResponseBuilder().setData(filename).getResponseEntity();
+    }
+
     /**
      * 上传文件.
      * 上传jar包
@@ -276,8 +326,6 @@ public class ServiceController {
             shellRunner.login();
             // 清除jar目录下以往的jar包
             String username = loginAuth.getUser(request.getHeader(Constant.RequestArg.Auth));
-            // 用户一对一专属部署文件夹，发生冲突说明你被盗号了
-            shellRunner.runCommand("rm -rf "+jarPath+"/"+username);
             shellRunner.runCommand("mkdir -p "+jarPath+"/"+username);
             List<String> prefixList = propertyService.getAppPrefixList();
             List<String> suffixList = propertyService.getAppSuffixList();

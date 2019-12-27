@@ -41,18 +41,18 @@ public class CommonController {
     @GetMapping("/message-list")
     public ResponseEntity getDeployMessage() {
         logger.info("/common/message-list");
-        List<History> totalList = historyMapper.selectMessage(20);
-//        int notReadCount = 0;
-//        List<History> totalList = historyMapper.selectNotRead(20);
-//        List<History> readList = null;
-//        if (totalList == null) {
-//            totalList = new LinkedList<>();
-//        }
-//        notReadCount = totalList.size();
-//        if (notReadCount < 10) {
-//            readList = historyMapper.selectAlreadyRead(10 - notReadCount);
-//            totalList.addAll(readList);
-//        }
+//        List<History> totalList = historyMapper.selectMessage(20);
+        int notReadCount = 0;
+        List<History> totalList = historyMapper.selectNotRead(10);
+        List<History> readList = null;
+        if (totalList == null) {
+            totalList = new LinkedList<>();
+        }
+        notReadCount = totalList.size();
+        if (notReadCount < 10) {
+            readList = historyMapper.selectAlreadyRead(10 - notReadCount);
+            totalList.addAll(readList);
+        }
         return new ResponseBuilder().setData(totalList).getResponseEntity();
     }
 
