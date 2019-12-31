@@ -9,10 +9,7 @@ import org.shelltest.service.mapper.PropertyMapper;
 import org.shelltest.service.mapper.RepoMapper;
 import org.shelltest.service.mapper.UserMapper;
 import org.shelltest.service.services.PropertyService;
-import org.shelltest.service.utils.Constant;
-import org.shelltest.service.utils.EncUtil;
-import org.shelltest.service.utils.ResponseBuilder;
-import org.shelltest.service.utils.ResponseEntity;
+import org.shelltest.service.utils.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -57,8 +54,16 @@ public class ConfigController {
 
     @PostMapping("/updateServer")
     public ResponseEntity updateServer(@Valid @RequestBody ServerDTO server) throws MyException {
-        throw new MyException(Constant.ResultCode.DEVELOPING, "开发中");
-//        return new ResponseBuilder().getResponseEntity();
+        ShellRunner loginTest = new ShellRunner(server.getIp(), server.getUsername(),
+                EncUtil.encode(EncUtil.decodeUserPass(server.getPassword())));
+        try {
+            loginTest.login();
+            loginTest.exit();
+        } catch (MyException e) {
+            throw new MyException(e.getResultCode(), "主机密码认证失败");
+        }
+        propertyService.updateServerInfo(server);
+        return new ResponseBuilder().getResponseEntity();
     }
 
     @PostMapping("/addServer")
@@ -67,6 +72,14 @@ public class ConfigController {
         example.createCriteria().andTypeEqualTo(Constant.PropertyType.IP).andValEqualTo(server.getIp());
         if (propertyMapper.selectByExample(example).size() != 0)
             throw new MyException(Constant.ResultCode.ARGS_ERROR, "已有主机");
+        ShellRunner loginTest = new ShellRunner(server.getIp(), server.getUsername(),
+                EncUtil.encode(EncUtil.decodeUserPass(server.getPassword())));
+        try {
+            loginTest.login();
+            loginTest.exit();
+        } catch (MyException e) {
+            throw new MyException(e.getResultCode(), "主机密码认证失败");
+        }
         propertyService.insertNewServer(server);
         return new ResponseBuilder().getResponseEntity();
     }
@@ -83,7 +96,7 @@ public class ConfigController {
     public ResponseEntity addRepo(@NotNull @RequestBody Repo repo) throws MyException {
         RepoExample example = new RepoExample();
         example.createCriteria().andRepoEqualTo(repo.getRepo());
-        if (repoMapper.selectByExample(example) != null)
+        if (repoMapper.selectByExample(example).size() > 0)
             throw new MyException(Constant.ResultCode.ARGS_ERROR, "已有仓库");
         repoMapper.insertSelective(repo);
         return new ResponseBuilder().getResponseEntity();

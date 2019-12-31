@@ -287,7 +287,7 @@ public class BuildAppService {
             else
                 return "打包异常\n"+shellRunner.getError();
         } else {
-            return "打包异常:"+gitRepository+"正在打包，请稍后重试";
+            return "打包失败:"+gitRepository+"正在打包，请稍后重试";
         }
     }
 
@@ -299,12 +299,25 @@ public class BuildAppService {
      * @return 该目录下是否有活跃的打包进程
      * */
     public boolean isPacking(@NotNull ShellRunner shellRunner, String gitRepository) throws MyException {
+        /* 脚本执行中但还没有执行打包命令时不适用
+        // node.js进程
         shellRunner.runCommand("ps -ef|grep [n]ode|grep '"+gitRepository+"' | wc -l");
         String retNode = (shellRunner.getResult()==null || shellRunner.getResult().size() == 0)?"0":(shellRunner.getResult().get(0));
-
+        // npm进程
+        shellRunner.runCommand("ps -ef|grep [n]pm|grep '"+gitRepository+"' | wc -l");
+        String retNpm = (shellRunner.getResult()==null || shellRunner.getResult().size() == 0)?"0":(shellRunner.getResult().get(0));
+        // maven进程
         shellRunner.runCommand("ps -ef|grep [m]vn|grep '"+gitRepository+"' | wc -l");
         String retMaven = (shellRunner.getResult()==null || shellRunner.getResult().size() == 0)?"0":(shellRunner.getResult().get(0));
 
-        return !(retNode.equalsIgnoreCase("0") && retMaven.equalsIgnoreCase("0"));
+        logger.info("仓库["+gitRepository+"]打包进程:[node:"+retNode+" npm:"+retNpm+" mvn:"+retMaven+"]");
+        return !(retNode.equalsIgnoreCase("0") && retNpm.equalsIgnoreCase("0") && retMaven.equalsIgnoreCase("0"));
+         */
+        // shell脚本进程
+        shellRunner.runCommand("ps -ef|grep -v grep|grep '"+gitRepository+"' | wc -l");
+        String retAny = (shellRunner.getResult()==null || shellRunner.getResult().size() == 0)?"0":(shellRunner.getResult().get(0));
+
+        logger.info("仓库["+gitRepository+"]打包脚本进程:"+retAny);
+        return !retAny.equalsIgnoreCase("0");
     }
 }

@@ -121,7 +121,7 @@ public class FrontendController {
         for (int i = 0; i < repositoryList.size(); i++) {
             logger.info("查找项目可用git分支："+repositoryList.get(i).getRepo());
             if (!buildAppService.isPacking(localRunner, repositoryList.get(i).getRepo())) {
-                List<String> availBranch = repoService.getAvailBranch(localRunner,repositoryList.get(i));
+                List<String> availBranch = repoService.getAvailBranch(localRunner,repositoryList.get(i), false);
                 repositoryList.get(i).setBranchList(availBranch);
             } else {
                 repositoryList.get(i).setBranchList(null);
@@ -132,6 +132,22 @@ public class FrontendController {
         localRunner.exit();
         logger.info("查找git分支完成");
         return new ResponseBuilder().putItem("repoList",repositoryList).getResponseEntity();
+    }
+
+    @GetMapping("updateRepo")
+    public ResponseEntity updateRepo(@NotNull @Param("repoName")String repoName) throws MyException {
+        Repo repo = repoService.getRepositoryByName(repoName);
+        ShellRunner localRunner = new ShellRunner(localURL,localUsername,localPassword);
+        localRunner.login();
+        if (!buildAppService.isPacking(localRunner, repoName)) {
+            uploadService.uploadScript(localRunner,"ListAvailBranch.sh",null);
+            List<String> availBranch = repoService.getAvailBranch(localRunner,repo);
+            repo.setBranchList(availBranch);
+            repo.setDeploy(false);
+        }
+        localRunner.runCommand("rm -f ListAvailBranch.sh");
+        localRunner.exit();
+        return new ResponseBuilder().setData(repo).getResponseEntity();
     }
 
     /**

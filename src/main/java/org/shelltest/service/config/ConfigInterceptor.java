@@ -29,7 +29,8 @@ public class ConfigInterceptor implements HandlerInterceptor {
     @Override
     public boolean preHandle(HttpServletRequest request, HttpServletResponse response, Object handler)
             throws Exception {
-        String token = request.getHeader("Authorization");
+        logger.info("---------------------------------------");
+        String token = request.getHeader(Constant.RequestArg.Auth);
         if (token != null) {
             String username = loginAuth.getUser(token);
             User root = userMapper.selectByPrimaryKey(username);
@@ -37,8 +38,10 @@ public class ConfigInterceptor implements HandlerInterceptor {
                 throw new LoginException(Constant.ResultCode.NOT_FOUND, "无效用户");
             if (!root.getRoot().equals(Constant.SQLEnum.ROOT_USER))
                 throw new LoginException(Constant.ResultCode.NOT_GRANT, "权限不足");
-            else
+            else {
+                logger.info("--------------- 配置页面权限校验通过 ---------------");
                 return true;
+            }
         }
         throw new LoginException(Constant.ResultCode.USER_LOGIN_FAILED, "请先登录");
     }

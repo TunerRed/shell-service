@@ -39,14 +39,13 @@ git pull
 ```
 
 ## 注意事项
-1. 搭建npm环境时使用`ln -s`创建链接，检测打包进程时该进程是有目录信息的（详见`BuildAppService.isPacking`方法，疑似没用）
-2. 同一主机只能有一套配置
-3. 确保`npm install`正常运行
-4. 确保`mvn install`正常执行
-5. 在`.bash_profile`中设置`export npm_config_loglevel=error`(前端打包信息不输出WARN级别信息)
-6. 配置需要在数据库手动添加，没写配置界面
+1. 同一主机只能有一套配置
+2. 确保`npm install`正常运行
+3. 确保`mvn install`正常执行
+4. 在`.bash_profile`中设置`export npm_config_loglevel=error`(前端打包信息不输出WARN级别信息)
+5. 权限配置需要在数据库手动修改，详见说明文档
 
 ## TIPS
 1. 可以借助seq字段指定登录同一IP要使用的配置（用户名，密码，路径，等等），每次获取配置时需要指定seq，不打算做
 2. [搭建centos虚拟机用于测试](https://blog.csdn.net/qq_28866471/article/details/102984161)
-3. 上传的脚本存储在jar包内部，运行完成后从远程删除脚本文件
+3. 上传的脚本存储在jar包内部，运行完成后从远程删除脚本文件，实现0脚本

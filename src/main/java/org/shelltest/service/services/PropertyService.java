@@ -6,6 +6,7 @@ import org.shelltest.service.entity.PropertyExample;
 import org.shelltest.service.exception.MyException;
 import org.shelltest.service.mapper.PropertyMapper;
 import org.shelltest.service.utils.Constant;
+import org.shelltest.service.utils.EncUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -79,6 +80,7 @@ public class PropertyService {
      * @param serverIP 服务器地址
      * */
     public List<Property> getServerInfo (String serverIP) throws MyException {
+        logger.info("---- 获取服务器配置 ["+serverIP+"] ----");
         PropertyExample serverExample = new PropertyExample();
         serverExample.createCriteria().andTypeEqualTo(Constant.PropertyType.IP).andValEqualTo(serverIP);
         List<Property> properties = propertyMapper.selectByExample(serverExample);
@@ -88,6 +90,7 @@ public class PropertyService {
         PropertyExample serverInfoExample = new PropertyExample();
         serverInfoExample.createCriteria().andKeyEqualTo(serverIP);
         List<Property> serverInfo = propertyMapper.selectByExample(serverInfoExample);
+        logger.info("--------------------------");
         return (serverInfo==null||serverInfo.isEmpty())?null:serverInfo;
     }
 
@@ -128,14 +131,62 @@ public class PropertyService {
         PropertyExample example = new PropertyExample();
         example.setOrderByClause("seq");
         example.createCriteria().andTypeEqualTo(Constant.PropertyType.IP).andSeqIsNotNull();
-        List<Property> properties = propertyMapper.selectByExample(example);
+        List<Property> ipList = propertyMapper.selectByExample(example);
         int seq = 0;
-        if (properties != null) {
-            seq = properties.get(properties.size() - 1).getSeq() + 1;
+        if (ipList != null && ipList.size() > 0) {
+            seq = ipList.get(ipList.size() - 1).getSeq() + 1;
         }
-        Property property = new Property(Constant.PropertyType.IP, server.getType(), server.getIp());
-        property.setSeq(seq);
-        // todo 新插入一套配置
-//        propertyMapper.insertSelective(property);
+        Property ip = new Property(Constant.PropertyType.IP, server.getType(), server.getIp());
+        ip.setSeq(seq);
+
+        Property[] properties = new Property[6];
+        properties[0]= new Property(Constant.PropertyType.USERNAME, server.getIp(), server.getUsername());
+        properties[1]= new Property(Constant.PropertyType.PASSWORD, server.getIp(), EncUtil.encode(EncUtil.decodeUserPass(server.getPassword())));
+        properties[2]= new Property(Constant.PropertyType.DEPLOY_PATH, server.getIp(), server.getDeployPath());
+        properties[3]= new Property(Constant.PropertyType.BACKUP_PATH, server.getIp(), server.getBackupPath());
+        if (server.getType().equalsIgnoreCase(Constant.PropertyKey.SERVICE)) {
+            properties[4]= new Property(Constant.PropertyType.RUN_PATH, server.getIp(), server.getRunPath());
+            properties[5]= new Property(Constant.PropertyType.LOG_PATH, server.getIp(), server.getLogPath());
+        }
+        for (int i = 0; i < properties.length && properties[i] != null; i++) {
+            propertyMapper.insertSelective(properties[i]);
+        }
+        propertyMapper.insertSelective(ip);
+    }
+
+    public void updateServerInfo(ServerDTO server) throws MyException {
+        List<Property> oldProperties = getServerInfo(server.getIp());
+        for (int i = 0; i < oldProperties.size(); i++) {
+            Property property = oldProperties.get(i);
+            String val = "";
+            switch (property.getType()) {
+                case Constant.PropertyType.USERNAME:
+                    val = server.getUsername();
+                    break;
+                case Constant.PropertyType.PASSWORD:
+                    val = EncUtil.encode(EncUtil.decodeUserPass(server.getPassword()));
+                    break;
+                case Constant.PropertyType.DEPLOY_PATH:
+                    val = server.getDeployPath();
+                    break;
+                case Constant.PropertyType.BACKUP_PATH:
+                    val = server.getBackupPath();
+                    break;
+                case Constant.PropertyType.RUN_PATH:
+                    val = server.getRunPath();
+                    break;
+                case Constant.PropertyType.LOG_PATH:
+                    val = server.getLogPath();
+                    break;
+                default:
+                    throw new MyException(Constant.ResultCode.INTERNAL_ERROR, "未知的配置类型");
+            }
+            if (property.getVal() == null || property.getVal().isEmpty() || !property.getVal().equals(val)) {
+                property.setVal(val);
+                PropertyExample example = new PropertyExample();
+                example.createCriteria().andTypeEqualTo(property.getType()).andKeyEqualTo(property.getKey());
+                propertyMapper.updateByExample(property, example);
+            }
+        }
     }
 }

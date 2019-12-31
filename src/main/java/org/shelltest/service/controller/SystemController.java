@@ -13,6 +13,8 @@ import org.shelltest.service.services.RepoService;
 import org.shelltest.service.utils.Constant;
 import org.shelltest.service.utils.ResponseBuilder;
 import org.shelltest.service.utils.ResponseEntity;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -33,8 +35,11 @@ public class SystemController {
     @Autowired
     RepoService repoService;
 
+    Logger logger = LoggerFactory.getLogger(this.getClass());
+
     @GetMapping("/read-message")
     public ResponseEntity readDeployMessage(Integer messageId) {
+        logger.info("/system/read-message");
         History history = new History();
         history.setIsRead("1");
         history.setMessageId(messageId);
@@ -44,12 +49,14 @@ public class SystemController {
 
     @GetMapping("/getUsers")
     public ResponseEntity getAllUsers() {
+        logger.info("/system/getUsers");
         List<User> users = userMapper.getAllUsers();
         return new ResponseBuilder().setData(users).getResponseEntity();
     }
 
     @GetMapping("/getServers")
     public ResponseEntity getAllServers() throws MyException {
+        logger.info("/system/getServers");
         List<ServerDTO> serverDTOList = new LinkedList<>();
         List<Property> properties = propertyService.getPropertyListByType(Constant.PropertyType.IP);
         if (properties != null) {
@@ -65,6 +72,7 @@ public class SystemController {
 
     @GetMapping("/getRepos")
     public ResponseEntity getAllRepos() {
+        logger.info("/system/getRepos");
         List<Repo> repos = repoService.getRepositoryByType(null);
         return new ResponseBuilder().setData(repos).getResponseEntity();
     }
