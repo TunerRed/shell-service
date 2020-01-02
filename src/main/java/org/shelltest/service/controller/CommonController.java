@@ -1,5 +1,6 @@
 package org.shelltest.service.controller;
 
+import org.apache.ibatis.annotations.Param;
 import org.shelltest.service.dto.StatisticEntity;
 import org.shelltest.service.entity.History;
 import org.shelltest.service.entity.HistoryExample;
@@ -16,6 +17,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.util.LinkedList;
@@ -39,18 +41,21 @@ public class CommonController {
     Logger logger = LoggerFactory.getLogger(this.getClass());
 
     @GetMapping("/message-list")
-    public ResponseEntity getDeployMessage() {
+    public ResponseEntity getDeployMessage(@RequestParam("count") int limit) {
         logger.info("/common/message-list");
-//        List<History> totalList = historyMapper.selectMessage(20);
-        int notReadCount = 0;
-        List<History> totalList = historyMapper.selectNotRead(10);
-        List<History> readList = null;
+//        List<History> totalList = historyMapper.selectMessage(limit);
+        if (limit <= 0) {
+            limit = 10;
+        }
+        int notReadCount;
+        List<History> totalList = historyMapper.selectNotRead(limit);
+        List<History> readList;
         if (totalList == null) {
             totalList = new LinkedList<>();
         }
         notReadCount = totalList.size();
-        if (notReadCount < 10) {
-            readList = historyMapper.selectAlreadyRead(10 - notReadCount);
+        if (notReadCount < limit) {
+            readList = historyMapper.selectAlreadyRead(limit - notReadCount);
             totalList.addAll(readList);
         }
         return new ResponseBuilder().setData(totalList).getResponseEntity();
