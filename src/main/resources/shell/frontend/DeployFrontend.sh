@@ -18,10 +18,12 @@ source ./.bash_profile
 
 tomcat_path
 
-if [ $# -ne 2 ];
-then
+if [ $# -lt 2 ]; then
   echo_error "shell args error"
   exit 1
+fi
+if [ $# -eq 3 ]; then
+  WEBAPPS_PATH=`pwd`/$3
 fi
 # deploy category
 DEPLOY_CATEGORY=$1

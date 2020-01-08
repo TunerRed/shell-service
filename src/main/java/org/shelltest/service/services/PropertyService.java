@@ -144,10 +144,10 @@ public class PropertyService {
         properties[1]= new Property(Constant.PropertyType.PASSWORD, server.getIp(), EncUtil.encode(EncUtil.decodeUserPass(server.getPassword())));
         properties[2]= new Property(Constant.PropertyType.DEPLOY_PATH, server.getIp(), server.getDeployPath());
         properties[3]= new Property(Constant.PropertyType.BACKUP_PATH, server.getIp(), server.getBackupPath());
-        if (server.getType().equalsIgnoreCase(Constant.PropertyKey.SERVICE)) {
+        if (server.getRunPath() != null && server.getRunPath().length() > 0)
             properties[4]= new Property(Constant.PropertyType.RUN_PATH, server.getIp(), server.getRunPath());
+        if (server.getType().equalsIgnoreCase(Constant.PropertyKey.SERVICE))
             properties[5]= new Property(Constant.PropertyType.LOG_PATH, server.getIp(), server.getLogPath());
-        }
         for (int i = 0; i < properties.length && properties[i] != null; i++) {
             propertyMapper.insertSelective(properties[i]);
         }

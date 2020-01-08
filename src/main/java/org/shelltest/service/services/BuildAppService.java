@@ -119,7 +119,8 @@ public class BuildAppService {
                             } else {
                                 deployResult.append("【失败】\n");
                             }
-                            deployResult.append("错误信息：\n"+remoteRunner.getError());
+                            if (remoteRunner.getError().length() > 0)
+                                deployResult.append("错误信息：\n"+remoteRunner.getError());
                             logger.info("服务启动完成"+services[i]);
                         } catch (MyException e) {
                             deployResult.append("服务启动异常："+e.getMessage());
@@ -238,13 +239,19 @@ public class BuildAppService {
                 String args = ShellRunner.appendArgs(new String[]{
                         propertyService.getValueByType(serverInfoList,Constant.PropertyType.DEPLOY_PATH),
                         propertyService.getValueByType(serverInfoList,Constant.PropertyType.BACKUP_PATH)});
+                try {
+                    String runningPath = propertyService.getValueByType(serverInfoList,Constant.PropertyType.RUN_PATH);
+                    args += (" "+runningPath);
+                } catch (MyException defaultTomcat) {
+                    logger.info("使用Tomcat进程指定的路径:"+defaultTomcat.getMessage());
+                }
                 if (remoteRunner.runCommand("sh DeployFrontend.sh"+args)) {
                     deployResult.append("部署成功 ");
                 } else {
                     deployResult.append("部署异常 ");
                 }
-                if (remoteRunner.getError() != null)
-                deployResult.append("错误信息:\n"+remoteRunner.getError()+"\n");
+                if (remoteRunner.getError().length() > 0 )
+                    deployResult.append("错误信息:"+remoteRunner.getError());
             } catch (MyException e) {
                 logger.error(e.getMessage());
                 deployResult.append("部署错误！\n"+e.getMessage());
