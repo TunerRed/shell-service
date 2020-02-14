@@ -23,13 +23,11 @@ public class RepoService {
 
     @Autowired
     BuildAppService buildAppService;
+    @Autowired
+    UploadService uploadService;
 
     @Value("${local.path.git}")
     String GIT_path;
-    @Value("${local.git.username}")
-    String GIT_user;
-    @Value("${local.git.password}")
-    String GIT_pass;
 
     Logger logger = LoggerFactory.getLogger(this.getClass());
 
@@ -56,8 +54,24 @@ public class RepoService {
         return repo;
     }
 
+    public List<Repo> getDecoratedRepos (ShellRunner shellRunner, List<Repo> repositoryList, boolean pull) throws MyException {
+        uploadService.uploadScript(shellRunner,"ListAvailBranch.sh",null);
+        for (int i = 0; i < repositoryList.size(); i++) {
+            logger.info("查找项目可用git分支："+repositoryList.get(i).getRepo());
+            if (!buildAppService.isPacking(shellRunner, repositoryList.get(i).getRepo())) {
+                List<String> availBranch = getAvailBranch(shellRunner,repositoryList.get(i), pull);
+                repositoryList.get(i).setBranchList(availBranch);
+            } else {
+                repositoryList.get(i).setBranchList(null);
+            }
+            repositoryList.get(i).setDeploy(false);
+        }
+        shellRunner.runCommand("rm -f ListAvailBranch.sh");
+        return repositoryList;
+    }
     public List<String> getAvailBranch (ShellRunner shellRunner, Repo repo, boolean pull) throws MyException {
-        String args = ShellRunner.appendArgs(new String[]{GIT_path+"/"+repo.getRepo(),GIT_user,GIT_pass, String.valueOf(pull?1:0)});
+        uploadService.uploadScript(shellRunner,"ListAvailBranch.sh",null);
+        String args = ShellRunner.appendArgs(new String[]{GIT_path+"/"+repo.getRepo(), String.valueOf(pull?1:0)});
         List<String> result = null;
         if (shellRunner.runCommand("sh ListAvailBranch.sh" + args)) {
             result = shellRunner.getResult();
@@ -77,13 +91,13 @@ public class RepoService {
     }
 
     public List<String> getAvailNpmScript (ShellRunner shellRunner, Repo repo, String branch) throws MyException {
-        String args = ShellRunner.appendArgs(new String[]{GIT_path+"/"+repo.getRepo(),branch,GIT_user,GIT_pass});
+        String args = ShellRunner.appendArgs(new String[]{GIT_path+"/"+repo.getRepo(),branch});
         if (!shellRunner.runCommand("sh GitCheckout.sh" + args)) {
             throw new MyException(Constant.ResultCode.SHELL_ERROR, "切换分支 执行错误:\n"+shellRunner.getError());
         }
 
         List<String> result = null;
-        args = ShellRunner.appendArgs(new String[]{GIT_path+"/"+repo.getRepo(),GIT_user,GIT_pass});
+        args = ShellRunner.appendArgs(new String[]{GIT_path+"/"+repo.getRepo()});
         result = null;
         if (shellRunner.runCommand("sh ListAvailScript.sh" + args)) {
             result = shellRunner.getResult();

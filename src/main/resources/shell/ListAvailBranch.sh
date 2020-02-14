@@ -1,7 +1,5 @@
 GIT_path=$1
-GIT_user=$2
-GIT_pass=$3
-GIT_pull=$4
+GIT_pull=$2
 
 cd $GIT_path
 

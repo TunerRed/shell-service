@@ -3,25 +3,22 @@ function echo_error() {
     echo -e "$1" 1>&2
 }
 function expect_git_cmd () {
-  #expect $SHELL_home_path/LoginAuth.sh $GIT_user $GIT_pass "git $1"
   git $1 > /dev/null 2>&1
 }
 
-if [ $# -ne 8 ];
+if [ $# -ne 6 ];
 then
   echo_error "shell args error"
   exit 1
 fi
 
-GIT_url=$1
-GIT_user=$2
-GIT_pass=$3
-GIT_path=$4
-GIT_repo=$5
-GIT_branch=$6
+GIT_path=$1
+GIT_repo=$2
+GIT_branch=$3
+BUILD_script=$4
 
-BUILD_script=$7
-BUILD_app_name=$8
+TAR_path=$5
+BUILD_app_name=$6
 
 SHELL_home_path=`pwd`
 
@@ -36,19 +33,22 @@ then
 fi
 
 cd $GIT_path
-#if [ ! -d $GIT_repo ];
-#then
-# expect_git_cmd "clone $GIT_url/$GIT_repo.git"
-#fi
+if [ ! -d $GIT_repo ];
+then
+ #git clone $GIT_url/$GIT_repo.git
+ echo_error "no repository found:$GIT_repo"
+ exit 1
+fi
+
 cd $GIT_repo
 git pull > /dev/null 2>&1
-if [ `git branch | grep '*'| grep -E "$Git_branch$" | wc -l` -eq 0 ];
+if [ `git branch | grep '*'| grep -E "$GIT_branch$" | wc -l` -eq 0 ];
 then
-  git checkout $Git_branch > /dev/null
+  git checkout $GIT_branch > /dev/null
   git pull origin $GIT_branch > /dev/null
 fi
-npm install
 
+npm install
 if [ $? -ne 0 ] ;
 then
   echo_error "Install Error"
@@ -70,4 +70,5 @@ mv dist $BUILD_app_name
 tar -czf $BUILD_app_name.tar.gz $BUILD_app_name/*
 
 rm -rf $BUILD_app_name
-mv $BUILD_app_name.tar.gz ../
+mkdir -p $TAR_path
+mv $BUILD_app_name.tar.gz $TAR_path

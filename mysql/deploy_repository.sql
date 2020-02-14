@@ -20,7 +20,8 @@ DROP TABLE IF EXISTS `deploy_repository`;
 CREATE TABLE `deploy_repository` (
   `repo_type` enum('SERVICE','FRONTEND') NOT NULL DEFAULT 'FRONTEND',
   `repo` varchar(50) NOT NULL,
-  `filename` varchar(20) NOT NULL
+  `filename` varchar(20) CHARACTER SET utf8 COLLATE utf8_general_ci DEFAULT '',
+  `location` varchar(255) CHARACTER SET utf8 COLLATE utf8_general_ci DEFAULT ''
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
 -- ----------------------------

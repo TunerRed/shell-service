@@ -54,6 +54,8 @@ public class FrontendController {
     String localPassword;
     @Value("${local.path.git}")
     String localGitPath;
+    @Value("${local.path.user}")
+    String userPath;
 
     private Logger logger = LoggerFactory.getLogger(this.getClass());
 
@@ -64,7 +66,6 @@ public class FrontendController {
      * */
     @GetMapping("/getServerList")
     public ResponseEntity getServerList() {
-        logger.info("/frontend/getServerList");
         List<String> authServers = otherUtil.getGrantedServerList(Constant.PropertyKey.FRONTEND);
         return new ResponseBuilder().putItem("list",authServers).getResponseEntity();
     }
@@ -114,27 +115,20 @@ public class FrontendController {
      * */
     @GetMapping("/getRepoList")
     public ResponseEntity  getFrontendRepoList () throws MyException {
+        List<Repo> repositoryList = repoService.getRepositoryByType(Constant.PropertyKey.FRONTEND);
+        for (int i = 0; i < repositoryList.size(); i++) {
+            Repo repo = repositoryList.get(i);
+            logger.debug(repo.getRepo()+" "+repo.getFilename()+" "+repo.getLocation());
+        }
         ShellRunner localRunner = new ShellRunner(localURL,localUsername,localPassword);
         localRunner.login();
-        List<Repo> repositoryList = repoService.getRepositoryByType(Constant.PropertyKey.FRONTEND);
-        uploadService.uploadScript(localRunner,"ListAvailBranch.sh",null);
-        for (int i = 0; i < repositoryList.size(); i++) {
-            logger.info("查找项目可用git分支："+repositoryList.get(i).getRepo());
-            if (!buildAppService.isPacking(localRunner, repositoryList.get(i).getRepo())) {
-                List<String> availBranch = repoService.getAvailBranch(localRunner,repositoryList.get(i), false);
-                repositoryList.get(i).setBranchList(availBranch);
-            } else {
-                repositoryList.get(i).setBranchList(null);
-            }
-            repositoryList.get(i).setDeploy(false);
-        }
-        localRunner.runCommand("rm -f ListAvailBranch.sh");
+        repositoryList = repoService.getDecoratedRepos(localRunner, repositoryList, false);
         localRunner.exit();
         logger.info("查找git分支完成");
         return new ResponseBuilder().putItem("repoList",repositoryList).getResponseEntity();
     }
 
-    @GetMapping("updateRepo")
+    @GetMapping("/updateRepo")
     public ResponseEntity updateRepo(@NotNull @Param("repoName")String repoName) throws MyException {
         Repo repo = repoService.getRepositoryByName(repoName);
         ShellRunner localRunner = new ShellRunner(localURL,localUsername,localPassword);
@@ -189,10 +183,11 @@ public class FrontendController {
         //登录本地服务器，上传脚本至本地目录(复用，不然还需要写在本地执行脚本的代码。可能会有性能问题)
         ShellRunner localRunner = new ShellRunner(localURL,localUsername,localPassword);
         localRunner.login();
-        localRunner.runCommand("rm -f "+localGitPath+"/*.tar.gz");
+        String frontendPath = userPath+"/"+loginAuth.getUsername()+"/frontend/";
+        localRunner.runCommand("rm -r "+frontendPath);
+        localRunner.runCommand("mkdir -p "+frontendPath);
         uploadService.uploadScript(localRunner, "BuildFrontend.sh", "frontend");
-        // uploadService.uploadScript(localRunner, "LoginAuth.sh", "frontend/expect");
-        buildAppService.buildFrontendThread(localRunner, propertyService.getServerInfo(serverIP), deployList);
+        buildAppService.buildFrontendThread(localRunner, propertyService.getServerInfo(serverIP), deployList, frontendPath);
         return new ResponseBuilder().getResponseEntity();
     }
 

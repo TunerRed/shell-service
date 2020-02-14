@@ -13,6 +13,8 @@ public class Repo implements Serializable {
 
     private String filename;
 
+    private String location;
+
     private List<String> branchList;
 
     private List<String> scriptList;
@@ -67,4 +69,11 @@ public class Repo implements Serializable {
         this.scriptList = scriptList;
     }
 
+    public String getLocation() {
+        return location;
+    }
+
+    public void setLocation(String location) {
+        this.location = location;
+    }
 }

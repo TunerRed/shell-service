@@ -26,15 +26,8 @@ local:
   # 配置本地的一些路径
   path:
     shell: shell
-    git: /home/yncs/git
-    jar: /home/yncs/git/jar
-  # 每次git操作都需要授权时可能会用到，会使用expect脚本
-  # 考虑到效率等等，直接在服务器存储了用户名密码，建议在服务器新建账户
-  git:
-    url: https://github.com/Tunerred/
-    username: Tunerred
-    # 无论使用哪种方式，root账户都有办法看到密码（大概），还请注意
-    password: fake
+    git: /home/dev/git
+    user: /home/dev/user
 
 
 # ------------------ SQL ------------------

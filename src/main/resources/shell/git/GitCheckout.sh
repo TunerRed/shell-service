@@ -1,7 +1,5 @@
 Git_path=$1
 Git_branch=$2
-Git_user=$3
-Git_pass=$4
 
 function echo_error () {
   echo -e "$1" 1>&2

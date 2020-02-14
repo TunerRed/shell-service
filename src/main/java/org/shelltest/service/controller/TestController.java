@@ -37,6 +37,11 @@ public class TestController {
     @Value("${local.path.git}")
     String localGitPath;
 
+//    @Value("${local.path.user}")
+//    String userPath;
+//    @Value("${local.path.user.upload}")
+//    String userUploadPath;
+
     @Autowired
     UploadService uploadService;
 
@@ -74,6 +79,11 @@ public class TestController {
         }
         return new ResponseBuilder().setData(String.join(" ", list)).getResponseEntity();
     }
+
+//    @GetMapping("/test/var")
+//    public ResponseEntity getPath() {
+//        return new ResponseBuilder().putItem("userPath",userPath).putItem("userUploadPath",userUploadPath).getResponseEntity();
+//    }
 
     @GetMapping("/test/startApp")
     public ResponseEntity startApp() throws MyException {

@@ -3,11 +3,9 @@ package org.shelltest.service.controller;
 import org.apache.ibatis.annotations.Param;
 import org.jetbrains.annotations.NotNull;
 import org.shelltest.service.dto.BuildDTO;
+import org.shelltest.service.dto.BuildEntity;
 import org.shelltest.service.dto.EurekaDTO;
-import org.shelltest.service.entity.History;
-import org.shelltest.service.entity.Property;
-import org.shelltest.service.entity.PropertyExample;
-import org.shelltest.service.entity.ServiceArgs;
+import org.shelltest.service.entity.*;
 import org.shelltest.service.exception.MockException;
 import org.shelltest.service.exception.MyException;
 import org.shelltest.service.mapper.HistoryMapper;
@@ -51,11 +49,12 @@ public class ServiceController {
     String localPassword;
     @Value("${local.path.git}")
     String localGitPath;
-    @Value("${local.path.jar}")
-    String jarPath;
+    @Value("${local.path.user}")
+    String userPath;
 
     @Autowired
     HttpServletRequest request;
+
     @Autowired
     LoginAuth loginAuth;
     @Autowired
@@ -66,6 +65,9 @@ public class ServiceController {
     BuildAppService buildAppService;
     @Autowired
     StartAppService startAppService;
+    @Autowired
+    RepoService repoService;
+
     @Autowired
     DeployLogUtil deployUtil;
     @Autowired
@@ -78,14 +80,12 @@ public class ServiceController {
 
     @GetMapping("/getServerList")
     public ResponseEntity getServerList() {
-        logger.info("/service/getServerList");
         List<String> authServers = otherUtil.getGrantedServerList(Constant.PropertyKey.SERVICE);
         return new ResponseBuilder().putItem("list",authServers).getResponseEntity();
     }
 
     @GetMapping("/getEurekaList")
     public ResponseEntity getEurekaList(String serverIP) throws MyException {
-        logger.info("/service/getEurekaList");
         List<EurekaDTO> eurekaDTOList = new LinkedList<>();
         String[] services;
         List<Property> serverInfo = propertyService.getServerInfo(serverIP);
@@ -125,7 +125,6 @@ public class ServiceController {
     @GetMapping("/stop")
     public ResponseEntity stopService(@NotNull@Param("serverIP")String serverIP,
                                       @NotNull@Param("name")String filename, @NotNull@Param("pid")int pid) throws MyException {
-        logger.info("杀进程：/service/stop");
         ShellRunner remoteRunner = new ShellRunner(serverIP, propertyService);
         remoteRunner.login();
         int runningPid = startAppService.getProcessPid(remoteRunner, filename);
@@ -137,7 +136,6 @@ public class ServiceController {
 
     @GetMapping("/start")
     public ResponseEntity startService(@NotNull@Param("serverIP")String serverIP, @NotNull@Param("name")String filename) throws MyException {
-        logger.info("启动进程：/service/start");
         // todo 起进程记录在history中不合适
         List<Property> serverInfo = propertyService.getServerInfo(serverIP);
         String serviceArgs =
@@ -176,10 +174,15 @@ public class ServiceController {
         return new ResponseBuilder().getResponseEntity();
     }
 
-    @GetMapping("/getServiceList")
-    public ResponseEntity getServiceList(String serverIP) {
-        logger.info("/service/getServiceList");
-        return new ResponseBuilder().getResponseEntity();
+    @GetMapping("/getRepoList")
+    public ResponseEntity getServiceList() throws MyException {
+        List<Repo> repositoryList = repoService.getRepositoryByType(Constant.PropertyKey.SERVICE);
+        ShellRunner localRunner = new ShellRunner(localURL,localUsername,localPassword);
+        localRunner.login();
+        repositoryList = repoService.getDecoratedRepos(localRunner, repositoryList, false);
+        localRunner.exit();
+        logger.info("查找git分支完成");
+        return new ResponseBuilder().putItem("repoList",repositoryList).getResponseEntity();
     }
 
     /**
@@ -190,7 +193,6 @@ public class ServiceController {
      * */
     @GetMapping("/download")
     public org.springframework.http.ResponseEntity downloadService(@NotNull@Param("serverIP")String serverIP, @NotNull@Param("filename")String filename) throws MyException {
-        logger.info("文件下载:/service/download");
         Long len = null;
         InputStreamResource res = null;
         HttpHeaders headers = new HttpHeaders();
@@ -200,14 +202,14 @@ public class ServiceController {
         // 清空本地的下载目录
         ShellRunner localRunner = new ShellRunner(localURL, localUsername, localPassword);
         localRunner.login();
-        localRunner.runCommand("rm -rf "+jarPath+"/download/*");
+        localRunner.runCommand("rm -rf "+userPath+"/"+loginAuth.getUsername()+"/download/*");
         localRunner.exit();
 
         ShellRunner remoteRunner = new ShellRunner(serverIP, propertyService, serverInfo);
         remoteRunner.login();
-        uploadService.downloadFile(remoteRunner, jarPath+"/download",
+        uploadService.downloadFile(remoteRunner, userPath+"/"+loginAuth.getUsername()+"/download",
                 propertyService.getValueByType(serverInfo, Constant.PropertyType.RUN_PATH), filename);
-        File file = new File(jarPath+"/download/"+filename);
+        File file = new File(userPath+"/"+loginAuth.getUsername()+"/download/"+filename);
         if (!file.exists() || !file.canRead()) {
             remoteRunner.exit();
             throw new MyException(Constant.ResultCode.NOT_FOUND, "不可读取的本地文件");
@@ -234,23 +236,50 @@ public class ServiceController {
                 .contentType(MediaType.APPLICATION_OCTET_STREAM).body(res);
     }
 
+    @GetMapping("/updateRepo")
+    public ResponseEntity updateRepo(@NotNull @Param("repoName")String repoName) throws MyException {
+        Repo repo = repoService.getRepositoryByName(repoName);
+        ShellRunner localRunner = new ShellRunner(localURL,localUsername,localPassword);
+        localRunner.login();
+        if (!buildAppService.isPacking(localRunner, repoName)) {
+            uploadService.uploadScript(localRunner,"ListAvailBranch.sh",null);
+            List<String> availBranch = repoService.getAvailBranch(localRunner,repo);
+            repo.setBranchList(availBranch);
+            repo.setDeploy(false);
+        }
+        localRunner.runCommand("rm -f ListAvailBranch.sh");
+        localRunner.exit();
+        return new ResponseBuilder().setData(repo).getResponseEntity();
+    }
+
     @PostMapping("/deployFromGit")
-    public ResponseEntity deployServiceFromGit(@RequestBody BuildDTO buildDTO) {
-        logger.info("/service/deployFromGit"+(buildDTO==null?" !!empty buildDTO!!":""));
+    public ResponseEntity deployServiceFromGit(@RequestBody BuildDTO buildDTO) throws MyException {
+        String serverIP = buildDTO.getServerIP();
+        BuildEntity[] deployList = buildDTO.getDeployList();
+        // 确认要部署的服务器有相应配置，避免白白打包浪费资源
+        List<Property> serverInfoList = propertyService.getServerInfo(serverIP);
+        if (serverInfoList == null)
+            throw new MyException(Constant.ResultCode.NOT_FOUND,"找不到服务器对应配置");
+        //登录本地服务器，上传脚本至本地目录(复用，不然还需要写在本地执行脚本的代码。可能会有性能问题)
+        ShellRunner localRunner = new ShellRunner(localURL,localUsername,localPassword);
+        localRunner.login();
+        String servicePath = userPath+"/"+loginAuth.getUsername()+"/service/";
+        localRunner.runCommand("rm -r "+servicePath);
+        localRunner.runCommand("mkdir -p "+servicePath);
+        uploadService.uploadScript(localRunner, "BuildService.sh", "service");
+        buildAppService.buildServiceThread(localRunner, propertyService.getServerInfo(serverIP), deployList, servicePath);
         return new ResponseBuilder().getResponseEntity();
     }
 
     @GetMapping("/deployServiceFromFile")
     public ResponseEntity deployServiceFromFile(@NotNull @RequestParam("serverIP") String serverIP) throws MyException {
-        logger.info("/service/deployFromFile");
         List<Property> serverInfoList = propertyService.getServerInfo(serverIP);
         ShellRunner remoteRunner = new ShellRunner(serverIP, propertyService, serverInfoList);
         remoteRunner.login();
-        String username = loginAuth.getUser(request.getHeader(Constant.RequestArg.Auth));
         // 上传脚本，顺便也提前测试下空间有没有满
         uploadService.uploadScript(remoteRunner, "DeployService.sh", "service");
         uploadService.uploadScript(remoteRunner, "StartService.sh", "service");
-        buildAppService.deployService(remoteRunner, jarPath+"/"+username,
+        buildAppService.deployService(remoteRunner, userPath+"/"+loginAuth.getUsername()+"/upload",
                 propertyService.getValueByType(serverInfoList, Constant.PropertyType.DEPLOY_PATH),
                 propertyService.getValueByType(serverInfoList, Constant.PropertyType.BACKUP_PATH),
                 propertyService.getValueByType(serverInfoList, Constant.PropertyType.RUN_PATH),
@@ -260,13 +289,12 @@ public class ServiceController {
 
     @GetMapping("/clearUpload")
     public ResponseEntity clearUploadDir() throws MyException {
-        logger.info("/service/clearUpload");
         ShellRunner shellRunner = new ShellRunner(localURL, localUsername, localPassword);
         shellRunner.login();
         // 清除jar目录下以往的jar包
         String username = loginAuth.getUser(request.getHeader(Constant.RequestArg.Auth));
-        shellRunner.runCommand("rm -rf "+jarPath+"/"+username);
-        shellRunner.runCommand("mkdir -p "+jarPath+"/"+username);
+        shellRunner.runCommand("rm -rf "+userPath+"/"+loginAuth.getUsername()+"/upload");
+        shellRunner.runCommand("mkdir -p "+userPath+"/"+loginAuth.getUsername()+"/upload");
         shellRunner.exit();
         logger.info("清理旧文件完成");
         return new ResponseBuilder().getResponseEntity();
@@ -279,22 +307,21 @@ public class ServiceController {
      * */
     @PostMapping("/uploadService")
     public ResponseEntity uploadServiceJar(@RequestParam("file") MultipartFile file) throws MyException {
-        logger.info("/service/uploadService");
         if (file.isEmpty() || !file.getOriginalFilename().endsWith(".jar"))
             throw new MyException(Constant.ResultCode.FILE_ERROR, "文件错误:"+file.getOriginalFilename());
         String filename = "";
         try {
             // 清除jar目录下以往的jar包
-            String username = loginAuth.getUser(request.getHeader(Constant.RequestArg.Auth));
+            String username = loginAuth.getUsername();
             List<String> prefixList = propertyService.getAppPrefixList();
             List<String> suffixList = propertyService.getAppSuffixList();
             filename = otherUtil.getRename(file.getOriginalFilename(), prefixList, suffixList)+".jar";
-            File dest = new File(jarPath+"/"+username+"/"+ filename);
+            File dest = new File(userPath+"/"+loginAuth.getUsername()+"/"+ filename);
             try {
                 logger.debug("重命名文件到："+dest);
                 dest.mkdirs();
                 file.transferTo(dest);
-                logger.info("文件已上传至："+jarPath+"/"+username);
+                logger.info("文件已上传至："+userPath+"/"+loginAuth.getUsername()+"/"+username);
             } catch (IOException e) {
                 // 一般不会发生
                 logger.error("后端保存文件失败："+e.getMessage());
@@ -315,7 +342,6 @@ public class ServiceController {
      * */
     @PostMapping("/uploadServices")
     public ResponseEntity uploadServiceJars(@RequestParam("file") MultipartFile[] files) throws MyException {
-        logger.info("/service/uploadServices");
         for (int i = 0; i < files.length; i++) {
             if (files[i].isEmpty())
                 throw new MyException(Constant.ResultCode.FILE_ERROR, "莫得文件内容:"+files[i].getOriginalFilename());
@@ -325,13 +351,13 @@ public class ServiceController {
             ShellRunner shellRunner = new ShellRunner(localURL, localUsername, localPassword);
             shellRunner.login();
             // 清除jar目录下以往的jar包
-            String username = loginAuth.getUser(request.getHeader(Constant.RequestArg.Auth));
-            shellRunner.runCommand("mkdir -p "+jarPath+"/"+username);
+            String path = userPath + "/" + loginAuth.getUsername() + "/upload/";
+            shellRunner.runCommand("mkdir -p " + path);
             List<String> prefixList = propertyService.getAppPrefixList();
             List<String> suffixList = propertyService.getAppSuffixList();
             for (int i = 0; i < files.length; i++) {
                 String filename = otherUtil.getRename(files[i].getOriginalFilename(), prefixList, suffixList)+".jar";
-                File dest = new File(jarPath+"/"+username+"/"+ filename);
+                File dest = new File(path + filename);
                 try {
                     logger.debug("重命名文件到："+dest);
                     files[i].transferTo(dest);
@@ -342,7 +368,7 @@ public class ServiceController {
                     throw new MyException(Constant.ResultCode.FILE_ERROR, "写文件失败，确认后端服务器有足够内存");
                 }
             }
-            logger.info("文件已上传至："+jarPath+"/"+username);
+            logger.info("文件已上传至："+path);
             shellRunner.exit();
             logger.info("文件重命名完成");
             logger.info("文件上传结束");

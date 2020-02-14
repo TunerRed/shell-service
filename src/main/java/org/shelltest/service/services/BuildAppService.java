@@ -10,6 +10,7 @@ import org.shelltest.service.mapper.HistoryMapper;
 import org.shelltest.service.mapper.ServiceArgsMapper;
 import org.shelltest.service.utils.Constant;
 import org.shelltest.service.utils.DeployLogUtil;
+import org.shelltest.service.utils.OtherUtil;
 import org.shelltest.service.utils.ShellRunner;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -29,6 +30,8 @@ public class BuildAppService {
     PropertyService propertyService;
     @Autowired
     StartAppService startAppService;
+    @Autowired
+    LoginAuth loginAuth;
 
     @Autowired
     HistoryMapper historyMapper;
@@ -36,17 +39,11 @@ public class BuildAppService {
     ServiceArgsMapper serviceArgsMapper;
     @Autowired
     DeployLogUtil deployUtil;
+    @Autowired
+    OtherUtil otherUtil;
 
-    @Value("${local.git.url}")
-    String git_url;
-    @Value("${local.git.username}")
-    String git_user;
-    @Value("${local.git.password}")
-    String git_password;
     @Value("${local.path.git}")
     String localGitPath;
-    @Value("${local.path.jar}")
-    String jarPath;
 
     private Logger logger = LoggerFactory.getLogger(this.getClass());
 
@@ -60,7 +57,7 @@ public class BuildAppService {
     public void deployService(ShellRunner remoteRunner, String localPath, String deployPath, String backupPath,String runPath,String logPath) {
         History deployLog = deployUtil.createLogEntity(remoteRunner);
         StringBuffer deployResult = new StringBuffer();
-        deployResult.append("部署类型：从文件部署后端\n");
+        deployResult.append("部署类型：部署后端\n");
         deployResult.append("目标服务器："+deployLog.getTarget()+"\n");
         new Thread(()->{
             try {
@@ -152,44 +149,105 @@ public class BuildAppService {
         }).start();
     }
 
-    private void swap(String[] arr, int x1, int x2) {
-        String temp = arr[x1];
-        arr[x1] = arr[x2];
-        arr[x2] = temp;
+    public void buildServiceThread(ShellRunner localRunner, List<Property> serverInfoList,  BuildEntity[] deployList, String servicePath) throws MyException {
+        // 记录犯罪证据.jpg(所有信息的key都是目标主机的ip)
+        History deployLog = deployUtil.createLogEntity(serverInfoList.get(0).getKey());
+
+        ShellRunner remoteUploader = new ShellRunner(deployLog.getTarget(), propertyService.getValueByType(serverInfoList, Constant.PropertyType.USERNAME),
+                propertyService.getValueByType(serverInfoList,Constant.PropertyType.PASSWORD));
+        remoteUploader.login();
+        // 提前上传脚本，测试下空间有没有满
+        uploadService.uploadScript(remoteUploader, "DeployService.sh", "service");
+        uploadService.uploadScript(remoteUploader, "StartService.sh", "service");
+        remoteUploader.exit();
+
+        // 开始打包
+        new Thread(()->{
+            StringBuffer deployResult = new StringBuffer();
+            try {
+                logger.info("--- 处理打包请求 ---");
+                deployResult.append("部署类型：从Git打包后端\n");
+                deployResult.append("目标服务器："+deployLog.getTarget()+"\n");
+                deployResult.append("所有打包：\n");
+                //在本机运行shell进行打包
+                for (int i = 0; i < deployList.length; i++) {
+                    BuildEntity buildEntity = deployList[i];
+                    deployResult.append("【"+(i+1)+"】"+buildEntity.getRepo()+":"
+                            +buildEntity.getBranch()+":"+buildEntity.getFilename()+"\n");
+                    String buildInfo = buildService(localRunner, buildEntity.getRepo(), buildEntity.getBranch(),
+                            buildEntity.getLocation(), servicePath);
+                    deployResult.append("打包结果：" + buildInfo + "\n");
+                }
+                //打包完成，不需要在本地再执行shell，退出这层远程登录，并登录远程和服务器
+                localRunner.runCommand("rm -f BuildService.sh");
+
+                // 对打包后的应用进行重命名
+                List<String> prefixList = propertyService.getAppPrefixList();
+                List<String> suffixList = propertyService.getAppSuffixList();
+                if (localRunner.runCommand("ls "+servicePath+"|egrep *.jar$")) {
+                    List<String> services = localRunner.getResult();
+                    if (services==null || services.size() == 0) {
+                        deployResult.append("未发现打包成功的应用!");
+                        localRunner.exit();
+                        return;
+                    } else {
+                        for (int i = 0; i < services.size(); i++) {
+                            String filename = services.get(i);
+                            String rename = otherUtil.getRename(filename, prefixList, suffixList);
+                            localRunner.runCommand("mv "+servicePath+"/"+filename+" "+servicePath+"/"+rename+".jar");
+                        }
+                    }
+                }
+                // 退出登录
+                localRunner.exit();
+            } catch (MyException e) {
+                logger.error(e.getMessage());
+                deployResult.append("打包错误！\n"+e.getMessage());
+            } finally {
+                // 打包完成，写日志到数据库
+                deployLog.setEndTime(new Date());
+                deployLog.setResult(deployResult.toString());
+                historyMapper.insertSelective(deployLog);
+                logger.info("--- 打包完成，已存储记录 ---");
+            }
+            // 按照从文件部署的思路进行部署，上传脚本后执行部署方法，最后存储记录
+            try {
+                ShellRunner startService = new ShellRunner(deployLog.getTarget(), propertyService.getValueByType(serverInfoList, Constant.PropertyType.USERNAME),
+                        propertyService.getValueByType(serverInfoList,Constant.PropertyType.PASSWORD));
+                startService.login();
+                deployService(startService, servicePath,
+                        propertyService.getValueByType(serverInfoList, Constant.PropertyType.DEPLOY_PATH),
+                        propertyService.getValueByType(serverInfoList, Constant.PropertyType.BACKUP_PATH),
+                        propertyService.getValueByType(serverInfoList, Constant.PropertyType.RUN_PATH),
+                        propertyService.getValueByType(serverInfoList, Constant.PropertyType.LOG_PATH));
+            } catch (MyException e) {
+                logger.error(e.getMessage());
+            }
+        }).start();
     }
 
     /**
-     * 回滚前端.
-     * 因为回滚比较快，所以直接返回
-     * 复制文件可能会用一些时间，一个前端包的赋值应该不会用太长时间
+     * 打包单个后端.
+     * @param shellRunner 本地连接
+     * @param gitRepository 要打包的git仓库
+     * @param gitBranch 要checkout到的git分支
+     * @param jarPath 生成的jar包在仓库内的相对位置
+     * @param targetPath 打包后的jar要移动到的文件夹
+     * @return 打包信息，是否打包成功
      * */
-    public void rollbackFrontend(ShellRunner remoteRunner, List<Property> serverInfoList, @NotNull List<RollbackFrontendEntity> rollbackList) throws MyException {
-        History deployLog = deployUtil.createLogEntity(remoteRunner);
-        logger.info("开始回滚："+deployLog.getTarget());
-        StringBuffer deployResult = new StringBuffer();
-        deployResult.append("部署类型：从备份回滚前端\n");
-        deployResult.append("目标服务器："+deployLog.getTarget()+"\n");
-        deployResult.append("所有回滚：\n");
-        for (int i = 0; i < rollbackList.size(); i++) {
-            RollbackFrontendEntity dataDTO = rollbackList.get(i);
-            // @param 2.备份父文件夹
-            // @param 3.父文件夹下的以时间作名字的具体备份文件夹
-            // @param 4.要部署到webapps文件夹底下的文件夹名，一般来讲与备份父文件夹同名，不排除需要自定义的场景
-            String tarDir = (dataDTO.getTarDir() == null || "".equalsIgnoreCase(dataDTO.getTarDir()))?dataDTO.getName():dataDTO.getTarDir();
-            String backupPath = propertyService.getValueByType(serverInfoList, Constant.PropertyType.BACKUP_PATH);
-            if (remoteRunner.runCommand("sh RollbackFrontend.sh" +
-                    ShellRunner.appendArgs(new String[]{backupPath, dataDTO.getName(), dataDTO.getTarBackup(), tarDir}) )) {
-                deployResult.append("回滚["+dataDTO.getName()+"/"+dataDTO.getTarBackup()+"]到【"+tarDir+"】成功\n");
-            } else {
-                deployResult.append("回滚["+dataDTO.getName()+"/"+dataDTO.getTarBackup()+"]到【"+tarDir+"】异常\n");
-            }
-            deployResult.append("错误信息："+remoteRunner.getError());
+    public String buildService(@NotNull ShellRunner shellRunner, String gitRepository, String gitBranch, String jarPath, String targetPath) throws MyException {
+        logger.debug("后端："+gitRepository+" 打包中");
+        if (!isPacking(shellRunner, gitRepository)) {
+            shellRunner.runCommand("sh BuildService.sh"
+                    + ShellRunner.appendArgs(new String[]{localGitPath,gitRepository,gitBranch,jarPath,targetPath}),null);
+            logger.debug("后端："+gitRepository+" 打包完成");
+            if (shellRunner.isSuccess())
+                return "打包成功\n"+shellRunner.getError();
+            else
+                return "打包异常\n"+shellRunner.getError();
+        } else {
+            return "打包失败:"+gitRepository+"正在打包，请稍后重试";
         }
-        //3.全工程clear，写日志到数据库
-        deployLog.setEndTime(new Date());
-        deployLog.setResult(deployResult.toString());
-        historyMapper.insertSelective(deployLog);
-        logger.info("--- 回滚完成，已存储记录 ---");
     }
 
     /**
@@ -200,8 +258,8 @@ public class BuildAppService {
      * @param serverInfoList 要部署的服务器的配置列表
      * @param deployList 要部署的应用列表
      */
-    public void buildFrontendThread(ShellRunner localRunner, List<Property> serverInfoList,  BuildEntity[] deployList) {
-        // 记录犯罪证据.jpg
+    public void buildFrontendThread(ShellRunner localRunner, List<Property> serverInfoList,  BuildEntity[] deployList, String frontendPath) {
+        // 记录犯罪证据.jpg(所有信息的key都是目标主机的ip)
         History deployLog = deployUtil.createLogEntity(serverInfoList.get(0).getKey());
         new Thread(()->{
             StringBuffer deployResult = new StringBuffer();
@@ -216,7 +274,7 @@ public class BuildAppService {
                     deployResult.append("【"+(i+1)+"】"+deployList[i].getRepo()+":"
                             +deployList[i].getBranch()+":"+deployList[i].getFilename()+"\n");
                     String buildInfo = buildFrontend(localRunner, deployList[i].getRepo(), deployList[i].getBranch(),
-                            deployList[i].getScript(), deployList[i].getFilename());
+                            deployList[i].getScript(), frontendPath, deployList[i].getFilename());
                     deployResult.append("打包结果：" + buildInfo + "\n");
                 }
                 //打包完成，不需要在本地再执行shell，退出这层远程登录，并登录远程和服务器
@@ -283,11 +341,11 @@ public class BuildAppService {
      * @param filename 打包后的dist要打包成的文件名：filename.tar.gz --(解压)--> filename/index.html
      * @return 打包信息，是否打包成功
      * */
-    public String buildFrontend(@NotNull ShellRunner shellRunner, String gitRepository, String gitBranch, String npmScript, String filename) throws MyException {
+    public String buildFrontend(@NotNull ShellRunner shellRunner, String gitRepository, String gitBranch, String npmScript, String localPath, String filename) throws MyException {
         logger.debug("前端："+gitRepository+" 打包中");
         if (!isPacking(shellRunner, gitRepository)) {
             shellRunner.runCommand("sh BuildFrontend.sh"
-                    + ShellRunner.appendArgs(new String[]{git_url,git_user,git_password,localGitPath,gitRepository,gitBranch,npmScript,filename}),null);
+                    + ShellRunner.appendArgs(new String[]{localGitPath,gitRepository,gitBranch,npmScript,localPath,filename}),null);
             logger.debug("前端："+gitRepository+" 打包完成");
             if (shellRunner.isSuccess())
                 return "打包成功\n"+shellRunner.getError();
@@ -296,6 +354,40 @@ public class BuildAppService {
         } else {
             return "打包失败:"+gitRepository+"正在打包，请稍后重试";
         }
+    }
+
+    /**
+     * 回滚前端.
+     * 因为回滚比较快，所以直接返回
+     * 复制文件可能会用一些时间，一个前端包的赋值应该不会用太长时间
+     * */
+    public void rollbackFrontend(ShellRunner remoteRunner, List<Property> serverInfoList, @NotNull List<RollbackFrontendEntity> rollbackList) throws MyException {
+        History deployLog = deployUtil.createLogEntity(remoteRunner);
+        logger.info("开始回滚："+deployLog.getTarget());
+        StringBuffer deployResult = new StringBuffer();
+        deployResult.append("部署类型：从备份回滚前端\n");
+        deployResult.append("目标服务器："+deployLog.getTarget()+"\n");
+        deployResult.append("所有回滚：\n");
+        for (int i = 0; i < rollbackList.size(); i++) {
+            RollbackFrontendEntity dataDTO = rollbackList.get(i);
+            // @param 2.备份父文件夹
+            // @param 3.父文件夹下的以时间作名字的具体备份文件夹
+            // @param 4.要部署到webapps文件夹底下的文件夹名，一般来讲与备份父文件夹同名，不排除需要自定义的场景
+            String tarDir = (dataDTO.getTarDir() == null || "".equalsIgnoreCase(dataDTO.getTarDir()))?dataDTO.getName():dataDTO.getTarDir();
+            String backupPath = propertyService.getValueByType(serverInfoList, Constant.PropertyType.BACKUP_PATH);
+            if (remoteRunner.runCommand("sh RollbackFrontend.sh" +
+                    ShellRunner.appendArgs(new String[]{backupPath, dataDTO.getName(), dataDTO.getTarBackup(), tarDir}) )) {
+                deployResult.append("回滚["+dataDTO.getName()+"/"+dataDTO.getTarBackup()+"]到【"+tarDir+"】成功\n");
+            } else {
+                deployResult.append("回滚["+dataDTO.getName()+"/"+dataDTO.getTarBackup()+"]到【"+tarDir+"】异常\n");
+            }
+            deployResult.append("错误信息："+remoteRunner.getError());
+        }
+        //3.全工程clear，写日志到数据库
+        deployLog.setEndTime(new Date());
+        deployLog.setResult(deployResult.toString());
+        historyMapper.insertSelective(deployLog);
+        logger.info("--- 回滚完成，已存储记录 ---");
     }
 
     /**
@@ -326,5 +418,11 @@ public class BuildAppService {
 
         logger.info("仓库["+gitRepository+"]打包脚本进程:"+retAny);
         return !retAny.equalsIgnoreCase("0");
+    }
+
+    private void swap(String[] arr, int x1, int x2) {
+        String temp = arr[x1];
+        arr[x1] = arr[x2];
+        arr[x2] = temp;
     }
 }

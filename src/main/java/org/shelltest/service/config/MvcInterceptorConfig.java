@@ -14,6 +14,8 @@ public class MvcInterceptorConfig extends WebMvcConfigurationSupport{
     private LoginInterceptor loginInterceptor;
     @Autowired
     private ConfigInterceptor configInterceptor;
+    @Autowired
+    private EchoApi echoApi;
 
     Logger logger = LoggerFactory.getLogger(this.getClass());
 
@@ -27,6 +29,8 @@ public class MvcInterceptorConfig extends WebMvcConfigurationSupport{
                 .excludePathPatterns("/test/**","/common/**","/backdoor/**");
         logger.debug("Configuration add: configInterceptor");
         registry.addInterceptor(configInterceptor).addPathPatterns("/system/config/**");
+        logger.debug("Configuration add: echoApi");
+        registry.addInterceptor(echoApi).addPathPatterns("/**");
 
         super.addInterceptors(registry);
     }

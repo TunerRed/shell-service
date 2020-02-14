@@ -33,8 +33,27 @@ public class BuildEntity {
         this.script = script;
     }
 
+    public boolean isDeploy() {
+        return deploy;
+    }
+
+    public void setDeploy(boolean deploy) {
+        this.deploy = deploy;
+    }
+
+    public String getLocation() {
+        return location;
+    }
+
+    public void setLocation(String location) {
+        this.location = location;
+    }
+
     String repo;
     String branch;
     String filename;
+    String location;
     String script;
+    // 是否进行部署（后端依赖可能只打包用作依赖而不部署）
+    boolean deploy;
 }
