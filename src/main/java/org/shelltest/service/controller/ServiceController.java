@@ -199,17 +199,19 @@ public class ServiceController {
         filename = filename.substring(filename.lastIndexOf('/') + 1);
         List<Property> serverInfo = propertyService.getServerInfo(serverIP);
 
-        // 清空本地的下载目录
+        // 新建本地下载目录，因为可能会同时下载多个文件，所以不删除
+        // todo 要有一个策略去清理这些文件
         ShellRunner localRunner = new ShellRunner(localURL, localUsername, localPassword);
         localRunner.login();
-        localRunner.runCommand("rm -rf "+userPath+"/"+loginAuth.getUsername()+"/download/*");
+        String downloadPath = userPath+"/"+loginAuth.getUsername()+"/download/";
+        localRunner.runCommand("mkdir -p "+downloadPath);
         localRunner.exit();
 
         ShellRunner remoteRunner = new ShellRunner(serverIP, propertyService, serverInfo);
         remoteRunner.login();
-        uploadService.downloadFile(remoteRunner, userPath+"/"+loginAuth.getUsername()+"/download",
+        uploadService.downloadFile(remoteRunner, downloadPath,
                 propertyService.getValueByType(serverInfo, Constant.PropertyType.RUN_PATH), filename);
-        File file = new File(userPath+"/"+loginAuth.getUsername()+"/download/"+filename);
+        File file = new File(downloadPath+filename);
         if (!file.exists() || !file.canRead()) {
             remoteRunner.exit();
             throw new MyException(Constant.ResultCode.NOT_FOUND, "不可读取的本地文件");
@@ -279,11 +281,12 @@ public class ServiceController {
         // 上传脚本，顺便也提前测试下空间有没有满
         uploadService.uploadScript(remoteRunner, "DeployService.sh", "service");
         uploadService.uploadScript(remoteRunner, "StartService.sh", "service");
-        buildAppService.deployService(remoteRunner, userPath+"/"+loginAuth.getUsername()+"/upload",
+        buildAppService.deployService(remoteRunner, userPath+"/"+loginAuth.getUsername()+"/upload/",
                 propertyService.getValueByType(serverInfoList, Constant.PropertyType.DEPLOY_PATH),
                 propertyService.getValueByType(serverInfoList, Constant.PropertyType.BACKUP_PATH),
                 propertyService.getValueByType(serverInfoList, Constant.PropertyType.RUN_PATH),
-                propertyService.getValueByType(serverInfoList, Constant.PropertyType.LOG_PATH));
+                propertyService.getValueByType(serverInfoList, Constant.PropertyType.LOG_PATH),
+                deployUtil.createLogEntity(remoteRunner));
         return new ResponseBuilder().getResponseEntity();
     }
 
@@ -292,9 +295,9 @@ public class ServiceController {
         ShellRunner shellRunner = new ShellRunner(localURL, localUsername, localPassword);
         shellRunner.login();
         // 清除jar目录下以往的jar包
-        String username = loginAuth.getUser(request.getHeader(Constant.RequestArg.Auth));
-        shellRunner.runCommand("rm -rf "+userPath+"/"+loginAuth.getUsername()+"/upload");
-        shellRunner.runCommand("mkdir -p "+userPath+"/"+loginAuth.getUsername()+"/upload");
+        String uploadPath = userPath+"/"+loginAuth.getUsername()+"/upload/";
+        shellRunner.runCommand("rm -r "+uploadPath);
+        shellRunner.runCommand("mkdir -p "+uploadPath);
         shellRunner.exit();
         logger.info("清理旧文件完成");
         return new ResponseBuilder().getResponseEntity();
@@ -312,16 +315,16 @@ public class ServiceController {
         String filename = "";
         try {
             // 清除jar目录下以往的jar包
-            String username = loginAuth.getUsername();
+            String uploadPath = userPath+"/"+loginAuth.getUsername()+"/upload/";
             List<String> prefixList = propertyService.getAppPrefixList();
             List<String> suffixList = propertyService.getAppSuffixList();
             filename = otherUtil.getRename(file.getOriginalFilename(), prefixList, suffixList)+".jar";
-            File dest = new File(userPath+"/"+loginAuth.getUsername()+"/"+ filename);
+            File dest = new File(uploadPath+ filename);
             try {
                 logger.debug("重命名文件到："+dest);
                 dest.mkdirs();
                 file.transferTo(dest);
-                logger.info("文件已上传至："+userPath+"/"+loginAuth.getUsername()+"/"+username);
+                logger.info("文件已上传至："+uploadPath);
             } catch (IOException e) {
                 // 一般不会发生
                 logger.error("后端保存文件失败："+e.getMessage());

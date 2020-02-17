@@ -42,7 +42,6 @@ public class CommonController {
 
     @GetMapping("/message-list")
     public ResponseEntity getDeployMessage(@RequestParam("count") int limit) {
-        logger.info("/common/message-list");
 //        List<History> totalList = historyMapper.selectMessage(limit);
         if (limit <= 0) {
             limit = 10;
@@ -63,7 +62,6 @@ public class CommonController {
 
     @GetMapping("/statistic")
     public ResponseEntity getStatistics() {
-        logger.info("/common/statistic");
         List<StatisticEntity> list = historyMapper.getStatisticList(otherUtil.getFormatDateInMonth(-1,1),
                 otherUtil.getFormatDateInMonth(1, 0));
         return new ResponseBuilder().putItem("dateList", list).getResponseEntity();
@@ -71,7 +69,6 @@ public class CommonController {
 
     @GetMapping("/login")
     public ResponseEntity login (String username, String password) throws LoginException {
-        logger.info("/common/login");
         String token;
         if (username == null || password == null) {
             throw new LoginException("登录失败，请重新登录");

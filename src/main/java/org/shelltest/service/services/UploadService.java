@@ -79,7 +79,7 @@ public class UploadService {
                     }
                 }
                 if (targetFiles.size() == 0) {
-                    throw new MyException(Constant.ResultCode.NOT_FOUND, "本地目录下未发现可用的文件:"+localPath+suffix);
+                    throw new MyException(Constant.ResultCode.NOT_FOUND, "本地目录下未发现可用的文件:"+localPath);
                 }
                 uploadNameList = new String[targetFiles.size()];
                 targetFiles.toArray(uploadNameList);

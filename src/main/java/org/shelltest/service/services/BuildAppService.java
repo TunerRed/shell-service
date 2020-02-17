@@ -54,8 +54,8 @@ public class BuildAppService {
      * @param deployPath 要上传到远程路径
      * @param runPath 远程机器上jar包运行的路径
      * */
-    public void deployService(ShellRunner remoteRunner, String localPath, String deployPath, String backupPath,String runPath,String logPath) {
-        History deployLog = deployUtil.createLogEntity(remoteRunner);
+    public void deployService(ShellRunner remoteRunner, String localPath, String deployPath,
+                              String backupPath,String runPath,String logPath, History deployLog) {
         StringBuffer deployResult = new StringBuffer();
         deployResult.append("部署类型：部署后端\n");
         deployResult.append("目标服务器："+deployLog.getTarget()+"\n");
@@ -151,9 +151,10 @@ public class BuildAppService {
 
     public void buildServiceThread(ShellRunner localRunner, List<Property> serverInfoList,  BuildEntity[] deployList, String servicePath) throws MyException {
         // 记录犯罪证据.jpg(所有信息的key都是目标主机的ip)
+        History packageLog = deployUtil.createLogEntity(serverInfoList.get(0).getKey());
         History deployLog = deployUtil.createLogEntity(serverInfoList.get(0).getKey());
 
-        ShellRunner remoteUploader = new ShellRunner(deployLog.getTarget(), propertyService.getValueByType(serverInfoList, Constant.PropertyType.USERNAME),
+        ShellRunner remoteUploader = new ShellRunner(packageLog.getTarget(), propertyService.getValueByType(serverInfoList, Constant.PropertyType.USERNAME),
                 propertyService.getValueByType(serverInfoList,Constant.PropertyType.PASSWORD));
         remoteUploader.login();
         // 提前上传脚本，测试下空间有没有满
@@ -167,14 +168,14 @@ public class BuildAppService {
             try {
                 logger.info("--- 处理打包请求 ---");
                 deployResult.append("部署类型：从Git打包后端\n");
-                deployResult.append("目标服务器："+deployLog.getTarget()+"\n");
+                deployResult.append("目标服务器："+packageLog.getTarget()+"\n");
                 deployResult.append("所有打包：\n");
                 //在本机运行shell进行打包
                 for (int i = 0; i < deployList.length; i++) {
                     BuildEntity buildEntity = deployList[i];
                     deployResult.append("【"+(i+1)+"】"+buildEntity.getRepo()+":"
                             +buildEntity.getBranch()+":"+buildEntity.getFilename()+"\n");
-                    String buildInfo = buildService(localRunner, buildEntity.getRepo(), buildEntity.getBranch(),
+                    String buildInfo = buildService(localRunner, buildEntity.getRepo(), buildEntity.getBranch(), buildEntity.isDeploy(),
                             buildEntity.getLocation(), servicePath);
                     deployResult.append("打包结果：" + buildInfo + "\n");
                 }
@@ -205,9 +206,9 @@ public class BuildAppService {
                 deployResult.append("打包错误！\n"+e.getMessage());
             } finally {
                 // 打包完成，写日志到数据库
-                deployLog.setEndTime(new Date());
-                deployLog.setResult(deployResult.toString());
-                historyMapper.insertSelective(deployLog);
+                packageLog.setEndTime(new Date());
+                packageLog.setResult(deployResult.toString());
+                historyMapper.insertSelective(packageLog);
                 logger.info("--- 打包完成，已存储记录 ---");
             }
             // 按照从文件部署的思路进行部署，上传脚本后执行部署方法，最后存储记录
@@ -219,7 +220,8 @@ public class BuildAppService {
                         propertyService.getValueByType(serverInfoList, Constant.PropertyType.DEPLOY_PATH),
                         propertyService.getValueByType(serverInfoList, Constant.PropertyType.BACKUP_PATH),
                         propertyService.getValueByType(serverInfoList, Constant.PropertyType.RUN_PATH),
-                        propertyService.getValueByType(serverInfoList, Constant.PropertyType.LOG_PATH));
+                        propertyService.getValueByType(serverInfoList, Constant.PropertyType.LOG_PATH),
+                        deployLog);
             } catch (MyException e) {
                 logger.error(e.getMessage());
             }
@@ -231,15 +233,16 @@ public class BuildAppService {
      * @param shellRunner 本地连接
      * @param gitRepository 要打包的git仓库
      * @param gitBranch 要checkout到的git分支
+     * @param isDeploy mvn install后是否用作部署（即是否只作为依赖包）
      * @param jarPath 生成的jar包在仓库内的相对位置
      * @param targetPath 打包后的jar要移动到的文件夹
      * @return 打包信息，是否打包成功
      * */
-    public String buildService(@NotNull ShellRunner shellRunner, String gitRepository, String gitBranch, String jarPath, String targetPath) throws MyException {
+    public String buildService(@NotNull ShellRunner shellRunner, String gitRepository, String gitBranch, boolean isDeploy, String jarPath, String targetPath) throws MyException {
         logger.debug("后端："+gitRepository+" 打包中");
         if (!isPacking(shellRunner, gitRepository)) {
             shellRunner.runCommand("sh BuildService.sh"
-                    + ShellRunner.appendArgs(new String[]{localGitPath,gitRepository,gitBranch,jarPath,targetPath}),null);
+                    + ShellRunner.appendArgs(new String[]{localGitPath,gitRepository,gitBranch,jarPath,targetPath,isDeploy?"1":"0"}),null);
             logger.debug("后端："+gitRepository+" 打包完成");
             if (shellRunner.isSuccess())
                 return "打包成功\n"+shellRunner.getError();
@@ -290,7 +293,7 @@ public class BuildAppService {
                 remoteRunner.runCommand("mkdir -p "+remoteDeployPath);
                 remoteRunner.runCommand("rm -f "+remoteDeployPath+"/*.tar.gz");
                 //打包完成，上传包到远程服务器
-                uploadService.uploadFiles(remoteRunner, localGitPath, remoteDeployPath,"tar.gz");
+                uploadService.uploadFiles(remoteRunner, frontendPath, remoteDeployPath,"tar.gz");
                 //上传完成，在远程服务器进行部署
                 uploadService.uploadScript(remoteRunner, "DeployFrontend.sh", "frontend");
                 //2.整理部署结果

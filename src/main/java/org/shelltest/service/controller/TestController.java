@@ -67,7 +67,6 @@ public class TestController {
 
     @GetMapping("/test/hello")
     public ResponseEntity sayHello() throws MyException {
-        logger.debug("--- hello world sayHello() ---");
         // List<String> list = serviceArgsMapper.getArgsWithDefault("192.168.0.2", "eureka");
         LinkedList<String> list = new LinkedList<>();
         list.add("test1");
