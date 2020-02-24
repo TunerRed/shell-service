@@ -31,11 +31,12 @@ fi
 
 cd ${GIT_PATH}/${GIT_REPO}
 newest=`git reflog|awk 'NR==1'|awk '{print $1}'`
-git reset --hard ${newest}
+git reset --hard ${newest} > /dev/null
+git pull > /dev/null 2>&1
 if [[ `git branch | grep "\*"| grep -E "$GIT_BRANCH$" | wc -l` -eq 0 ]]; then
-  git checkout ${GIT_BRANCH} > /dev/null
+  git checkout ${GIT_BRANCH} > /dev/null 2>&1
+  git pull origin ${GIT_BRANCH} > /dev/null 2>&1
 fi
-git pull origin ${GIT_BRANCH} > /dev/null
 
 BUILD_LOG="BUILD.log"
 mvn clean install > ${BUILD_LOG} 2>&1

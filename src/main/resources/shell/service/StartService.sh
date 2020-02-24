@@ -49,8 +49,9 @@ while true ; do
     exit 0
   fi 
   if [ $tail_count -ge $tail_max ] ; then
-    echo_error "$APP_file start failed"
-    echo_error "`tail -n 10 $APP_log`"
+    echo_error "`cat $APP_log|grep 'ERROR'`"
+    echo_error "`cat $APP_log|grep -i 'fail'`"
+    echo_error "`tail -n 5 $APP_log`"
     exit 1
   fi
 done 

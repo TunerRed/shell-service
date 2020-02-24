@@ -7,6 +7,7 @@ import org.shelltest.service.dto.BuildEntity;
 import org.shelltest.service.dto.RollbackFrontendDTO;
 import org.shelltest.service.entity.*;
 import org.shelltest.service.exception.MyException;
+import org.shelltest.service.exception.PackingException;
 import org.shelltest.service.mapper.PropertyMapper;
 import org.shelltest.service.dto.BuildDTO;
 import org.shelltest.service.services.*;
@@ -122,14 +123,14 @@ public class FrontendController {
         }
         ShellRunner localRunner = new ShellRunner(localURL,localUsername,localPassword);
         localRunner.login();
-        repositoryList = repoService.getDecoratedRepos(localRunner, repositoryList, false);
+        repositoryList = repoService.getDecoratedRepos(localRunner, repositoryList);
         localRunner.exit();
         logger.info("查找git分支完成");
         return new ResponseBuilder().putItem("repoList",repositoryList).getResponseEntity();
     }
 
     @GetMapping("/updateRepo")
-    public ResponseEntity updateRepo(@NotNull @Param("repoName")String repoName) throws MyException {
+    public ResponseEntity updateRepo(@NotNull @Param("repoName")String repoName) throws MyException, PackingException {
         Repo repo = repoService.getRepositoryByName(repoName);
         ShellRunner localRunner = new ShellRunner(localURL,localUsername,localPassword);
         localRunner.login();
@@ -138,6 +139,9 @@ public class FrontendController {
             List<String> availBranch = repoService.getAvailBranch(localRunner,repo);
             repo.setBranchList(availBranch);
             repo.setDeploy(false);
+        } else {
+            localRunner.exit();
+            throw new PackingException();
         }
         localRunner.runCommand("rm -f ListAvailBranch.sh");
         localRunner.exit();
@@ -151,19 +155,25 @@ public class FrontendController {
      * @param branch 分支。不同分支可用脚本可能不同
      * */
     @GetMapping("/getNpmScripts")
-    public ResponseEntity getAvailNpmScripts (String repo,String branch) throws MyException {
+    public ResponseEntity getAvailNpmScripts (String repo,String branch) throws MyException, PackingException {
         Repo _repo = new Repo();
         _repo.setRepo(repo);
         logger.debug(""+repo+" "+branch);
         ShellRunner localRunner = new ShellRunner(localURL,localUsername,localPassword);
         localRunner.login();
-        uploadService.uploadScript(localRunner,"GitCheckout.sh","git");
-        uploadService.uploadScript(localRunner,"ListAvailScript.sh","frontend");
-        List<String> availNpmScript = repoService.getAvailNpmScript(localRunner,_repo,branch);
-        localRunner.runCommand("rm -f GitCheckout.sh");
-        localRunner.runCommand("rm -f ListAvailScript.sh");
+        List<String> availNpmScript;
+        if (!buildAppService.isPacking(localRunner, repo)) {
+            uploadService.uploadScript(localRunner,"GitCheckout.sh","git");
+            uploadService.uploadScript(localRunner,"ListAvailScript.sh","frontend");
+            availNpmScript = repoService.getAvailNpmScript(localRunner,_repo,branch);
+            localRunner.runCommand("rm -f GitCheckout.sh");
+            localRunner.runCommand("rm -f ListAvailScript.sh");
+            logger.info("已获取全部分支");
+        } else {
+            localRunner.exit();
+            throw new PackingException();
+        }
         localRunner.exit();
-        logger.info("已获取全部分支");
         return new ResponseBuilder().setData(availNpmScript).getResponseEntity();
     }
 

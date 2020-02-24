@@ -10,6 +10,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
 import javax.servlet.http.HttpServletRequest;
+import java.text.SimpleDateFormat;
 import java.util.Date;
 
 @Service
@@ -42,11 +43,12 @@ public class LoginAuth {
     public String createToken (String username) {
         long curSeconds = System.currentTimeMillis();
         long expiresMillSecond = (expiresMinutes * 60 + expiresSeconds) * 1000;
-        setExpiration(new Date(curSeconds + expiresMillSecond));
+        Date date = new Date(curSeconds + expiresMillSecond);
+        setExpiration(date);
         JwtBuilder jwtBuilder = Jwts.builder().claim("loginTime",new Date(curSeconds)).setSubject(username)
                 .setIssuer(issUser).signWith(SignatureAlgorithm.HS512,secret)
                 .setExpiration(getExpiration()).setNotBefore(new Date(curSeconds));
-        logger.debug("用户[" + username + "]登录，token有效期：" + (expiresMillSecond/1000) + "秒");
+        logger.debug("用户[" + username + "]登录，token有效期至：" +new SimpleDateFormat("MM-dd HH:mm:ss").format(date));
         return jwtBuilder.compact();
     }
 

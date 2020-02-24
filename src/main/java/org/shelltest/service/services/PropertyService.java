@@ -90,7 +90,6 @@ public class PropertyService {
         PropertyExample serverInfoExample = new PropertyExample();
         serverInfoExample.createCriteria().andKeyEqualTo(serverIP);
         List<Property> serverInfo = propertyMapper.selectByExample(serverInfoExample);
-        logger.info("--------------------------");
         return (serverInfo==null||serverInfo.isEmpty())?null:serverInfo;
     }
 

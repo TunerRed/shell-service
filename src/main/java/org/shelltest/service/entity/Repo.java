@@ -19,6 +19,8 @@ public class Repo implements Serializable {
 
     private List<String> scriptList;
 
+    private boolean packing;
+
     private static final long serialVersionUID = 1L;
 
     public String getRepoType() {
@@ -75,5 +77,13 @@ public class Repo implements Serializable {
 
     public void setLocation(String location) {
         this.location = location;
+    }
+
+    public boolean isPacking() {
+        return packing;
+    }
+
+    public void setPacking(boolean packing) {
+        this.packing = packing;
     }
 }

@@ -79,7 +79,6 @@ public class ShellRunner {
             conn = new Connection(host);
             conn.connect();
             if (conn.authenticateWithPassword(username,password)){
-                logger.info("==========================");
                 logger.info("登录成功:"+conn.getHostname());
             } else {
                 logger.error("登录失败["+host+"]:"+conn.getConnectionInfo());
@@ -96,16 +95,14 @@ public class ShellRunner {
     /**
      * 退出远程桌面.
      * */
-    public void exit() throws MyException {
+    public void exit() {
         if (conn != null) {
             try {
                 conn.close();
                 conn = null;
                 logger.info("退出登录");
-                logger.info("--------------------------");
             } catch (Exception e){
                 logger.error("退出登录失败:"+e.getMessage());
-                throw new MyException(Constant.ResultCode.LOGIN_FAILED, "远程退出失败？");
             }
         }
     }
@@ -129,7 +126,7 @@ public class ShellRunner {
             BufferedReader stderrReader = new BufferedReader(new InputStreamReader(new StreamGobbler(session.getStderr()),"UTF-8"));
             String line;
             while ((line=stdoutReader.readLine())!=null) {
-                logger.info(line);
+//                logger.info(line);
                 resultMsg.add(line);
             }
             while ((line=stderrReader.readLine())!=null) {

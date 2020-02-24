@@ -416,7 +416,7 @@ public class BuildAppService {
         return !(retNode.equalsIgnoreCase("0") && retNpm.equalsIgnoreCase("0") && retMaven.equalsIgnoreCase("0"));
          */
         // shell脚本进程
-        shellRunner.runCommand("ps -ef|grep -v grep|grep '"+gitRepository+"' | wc -l");
+        shellRunner.runCommand("ps -ef|grep -v grep|grep 'sh '|grep '"+gitRepository+"' | wc -l");
         String retAny = (shellRunner.getResult()==null || shellRunner.getResult().size() == 0)?"0":(shellRunner.getResult().get(0));
 
         logger.info("仓库["+gitRepository+"]打包脚本进程:"+retAny);

@@ -8,6 +8,7 @@ import org.shelltest.service.dto.EurekaDTO;
 import org.shelltest.service.entity.*;
 import org.shelltest.service.exception.MockException;
 import org.shelltest.service.exception.MyException;
+import org.shelltest.service.exception.PackingException;
 import org.shelltest.service.mapper.HistoryMapper;
 import org.shelltest.service.mapper.PropertyMapper;
 import org.shelltest.service.mapper.ServiceArgsMapper;
@@ -179,7 +180,7 @@ public class ServiceController {
         List<Repo> repositoryList = repoService.getRepositoryByType(Constant.PropertyKey.SERVICE);
         ShellRunner localRunner = new ShellRunner(localURL,localUsername,localPassword);
         localRunner.login();
-        repositoryList = repoService.getDecoratedRepos(localRunner, repositoryList, false);
+        repositoryList = repoService.getDecoratedRepos(localRunner, repositoryList);
         localRunner.exit();
         logger.info("查找git分支完成");
         return new ResponseBuilder().putItem("repoList",repositoryList).getResponseEntity();
@@ -239,7 +240,7 @@ public class ServiceController {
     }
 
     @GetMapping("/updateRepo")
-    public ResponseEntity updateRepo(@NotNull @Param("repoName")String repoName) throws MyException {
+    public ResponseEntity updateRepo(@NotNull @Param("repoName")String repoName) throws MyException, PackingException {
         Repo repo = repoService.getRepositoryByName(repoName);
         ShellRunner localRunner = new ShellRunner(localURL,localUsername,localPassword);
         localRunner.login();
@@ -248,6 +249,9 @@ public class ServiceController {
             List<String> availBranch = repoService.getAvailBranch(localRunner,repo);
             repo.setBranchList(availBranch);
             repo.setDeploy(false);
+        } else {
+            localRunner.exit();
+            throw new PackingException();
         }
         localRunner.runCommand("rm -f ListAvailBranch.sh");
         localRunner.exit();
