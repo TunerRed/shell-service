@@ -50,10 +50,10 @@ public class UploadService {
             writer.write(stringBuilder.toString().getBytes("utf-8"));
             writer.close();
         } catch (IOException e){
-            throw new MyException(Constant.ResultCode.INTERNAL_ERROR,"上传脚本错误："+e.getMessage());
+            throw new MyException(Constant.ResultCode.INTERNAL_ERROR,"生成脚本异常："+e.getMessage());
         }
         uploadFile(shellRunner, shell, "");
-        logger.debug("脚本上传完成");
+//        logger.debug("脚本上传完成");
         return true;
     }
 
@@ -90,7 +90,7 @@ public class UploadService {
             scpClient.put(uploadNameList,remotePath);
             logger.info("文件上传完成");
         } catch (IOException e) {
-            throw new MyException(Constant.ResultCode.LOGIN_FAILED, "无法创建scp连接:"+e.getMessage());
+            throw new MyException(Constant.ResultCode.SHELL_ERROR, "无法创建scp连接(可能为空间满):"+e.getMessage());
         }
         // 返回文件列表包含路径，要去掉
         if (uploadNameList != null)
@@ -115,7 +115,7 @@ public class UploadService {
             SCPClient scpClient = shellRunner.getConn().createSCPClient();
             scpClient.put(fileName.getAbsolutePath(),remotePath);
         } catch (IOException e) {
-            throw new MyException(Constant.ResultCode.LOGIN_FAILED, "scp上传失败:"+e.getMessage());
+            throw new MyException(Constant.ResultCode.SHELL_ERROR, "无法创建scp连接(可能为空间满):"+e.getMessage());
         }
     }
 

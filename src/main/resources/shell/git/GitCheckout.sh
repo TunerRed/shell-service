@@ -12,8 +12,8 @@ then
 fi
 
 cd $Git_path
-newest=`git reflog|awk 'NR==1'|awk '{print $1}'`
-git reset --hard $newest
+#newest=`git reflog|awk 'NR==1'|awk '{print $1}'`
+#git reset --hard $newest
 if [ `git branch | grep "\*"| grep -E "$Git_branch$" | wc -l` -eq 0 ];
 then
   git checkout $Git_branch

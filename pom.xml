@@ -10,7 +10,7 @@
     </parent>
     <groupId>org.shell</groupId>
     <artifactId>shell-service</artifactId>
-    <version>1.1</version>
+    <version>1.1.1</version>
     <name>service</name>
     <description>start linux shell test</description>
 

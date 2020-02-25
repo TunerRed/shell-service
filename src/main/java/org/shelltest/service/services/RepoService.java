@@ -64,7 +64,7 @@ public class RepoService {
         for (int i = 0; i < repositoryList.size(); i++) {
             Repo repo = repositoryList.get(i);
             repo.setPacking(buildAppService.isPacking(shellRunner, repo.getRepo()));
-            if (repo.isPacking()) {
+            if (!repo.isPacking()) {
                 logger.info("查找项目可用git分支："+repo.getRepo());
                 List<String> availBranch = getAvailBranch(shellRunner,repo, false);
                 repo.setBranchList(availBranch);

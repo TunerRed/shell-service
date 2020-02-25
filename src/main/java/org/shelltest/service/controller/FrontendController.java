@@ -168,7 +168,7 @@ public class FrontendController {
             availNpmScript = repoService.getAvailNpmScript(localRunner,_repo,branch);
             localRunner.runCommand("rm -f GitCheckout.sh");
             localRunner.runCommand("rm -f ListAvailScript.sh");
-            logger.info("已获取全部分支");
+//            logger.info("已获取全部分支");
         } else {
             localRunner.exit();
             throw new PackingException();
