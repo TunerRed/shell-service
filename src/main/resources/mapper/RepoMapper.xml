@@ -144,7 +144,7 @@
         `filename` = #{record.filename,jdbcType=VARCHAR},
       </if>
       <if test="record.location != null" >
-        `filename` = #{record.location,jdbcType=VARCHAR},
+        `location` = #{record.location,jdbcType=VARCHAR},
       </if>
     </set>
     <if test="_parameter != null" >

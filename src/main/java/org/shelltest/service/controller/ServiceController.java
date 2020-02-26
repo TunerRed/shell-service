@@ -2,6 +2,7 @@ package org.shelltest.service.controller;
 
 import org.apache.ibatis.annotations.Param;
 import org.jetbrains.annotations.NotNull;
+import org.shelltest.service.dto.AppStartInDTO;
 import org.shelltest.service.dto.BuildDTO;
 import org.shelltest.service.dto.BuildEntity;
 import org.shelltest.service.dto.EurekaDTO;
@@ -135,30 +136,42 @@ public class ServiceController {
                 +"】 指定的pid:"+pid+" 查询到的pid:"+runningPid+"\n"+remoteRunner.getError());
     }
 
-    @GetMapping("/start")
-    public ResponseEntity startService(@NotNull@Param("serverIP")String serverIP, @NotNull@Param("name")String filename) throws MyException {
+    @PostMapping("/start")
+    public ResponseEntity startService(@RequestBody AppStartInDTO startInDTO) throws MyException {
         // todo 起进程记录在history中不合适
+        logger.debug(startInDTO.getServerIP());
+        String serverIP = startInDTO.getServerIP();
+        List<String> filenames = startInDTO.getFilenames();
         List<Property> serverInfo = propertyService.getServerInfo(serverIP);
-        String serviceArgs =
-                String.join(" ", serviceArgsMapper.getArgsWithDefault(serverIP, filename));
+        for (int i = 0; i < filenames.size(); i++) {
+                String filename = filenames.get(i);
+                logger.debug(filename);
+        }
         ShellRunner remoteRunner = new ShellRunner(serverIP, propertyService, serverInfo);
         remoteRunner.login();
         History deployLog = deployUtil.createLogEntity(serverIP);
         StringBuffer result = new StringBuffer();
         result.append("类型：启动服务\n-------------------\n");
         uploadService.uploadScript(remoteRunner, "StartService.sh", "service");
-        if (startAppService.killService(remoteRunner, filename))
-            result.append("杀进程\n");
+
         new Thread(()->{
             try {
-                if (startAppService.startService(remoteRunner, filename,
-                        propertyService.getValueByType(serverInfo, Constant.PropertyType.RUN_PATH), serviceArgs,
-                        propertyService.getValueByType(serverInfo, Constant.PropertyType.LOG_PATH))) {
-                    result.append("启动成功:"+remoteRunner.getResult().toString()+"\n");
-                } else {
-                    result.append("启动失败\n");
+                for (int i = 0; i < filenames.size(); i++) {
+                    String filename = filenames.get(i);
+                    logger.debug(filename);
+                    if (startAppService.killService(remoteRunner, filename))
+                        result.append("杀进程\n");
+                    String serviceArgs =
+                            String.join(" ", serviceArgsMapper.getArgsWithDefault(serverIP, filename));
+                    if (startAppService.startService(remoteRunner, filename,
+                            propertyService.getValueByType(serverInfo, Constant.PropertyType.RUN_PATH), serviceArgs,
+                            propertyService.getValueByType(serverInfo, Constant.PropertyType.LOG_PATH))) {
+                        result.append("启动成功:"+remoteRunner.getResult().toString()+"\n");
+                    } else {
+                        result.append("启动失败\n");
+                    }
+                    result.append("错误信息："+remoteRunner.getError());
                 }
-                result.append("错误信息："+remoteRunner.getError());
             } catch (MyException e) {
                 result.append("启动异常："+e.getMessage());
                 logger.error(e.getMessage());

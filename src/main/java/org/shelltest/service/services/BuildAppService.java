@@ -57,8 +57,8 @@ public class BuildAppService {
     public void deployService(ShellRunner remoteRunner, String localPath, String deployPath,
                               String backupPath,String runPath,String logPath, History deployLog) {
         StringBuffer deployResult = new StringBuffer();
-        deployResult.append("部署类型：部署后端\n");
-        deployResult.append("目标服务器："+deployLog.getTarget()+"\n");
+        deployResult.append("类型：部署后端\n");
+        deployResult.append("服务器："+deployLog.getTarget()+"\n");
         new Thread(()->{
             try {
                 /**
@@ -167,14 +167,16 @@ public class BuildAppService {
             StringBuffer deployResult = new StringBuffer();
             try {
                 logger.info("--- 处理打包请求 ---");
-                deployResult.append("部署类型：从Git打包后端\n");
-                deployResult.append("目标服务器："+packageLog.getTarget()+"\n");
-                deployResult.append("所有打包：\n");
+                deployResult.append("类型：从Git打包后端\n");
+                deployResult.append("服务器："+packageLog.getTarget()+"\n");
+                deployResult.append("----------------\n");
                 //在本机运行shell进行打包
                 for (int i = 0; i < deployList.length; i++) {
                     BuildEntity buildEntity = deployList[i];
-                    deployResult.append("【"+(i+1)+"】"+buildEntity.getRepo()+":"
-                            +buildEntity.getBranch()+":"+buildEntity.getFilename()+"\n");
+                    String basicInfo = deployList[i].getRepo()+"/";
+                    basicInfo += deployList[i].getBranch()+"/[";
+                    basicInfo += deployList[i].getLocation()+"]\n";
+                    deployResult.append(basicInfo);
                     String buildInfo = buildService(localRunner, buildEntity.getRepo(), buildEntity.getBranch(), buildEntity.isDeploy(),
                             buildEntity.getLocation(), servicePath);
                     deployResult.append("打包结果：" + buildInfo + "\n");
@@ -269,16 +271,19 @@ public class BuildAppService {
             ShellRunner remoteRunner = null;
             try {
                 logger.info("--- 处理打包请求 ---");
-                deployResult.append("部署类型：从Git部署前端\n");
-                deployResult.append("目标服务器："+deployLog.getTarget()+"\n");
-                deployResult.append("所有打包：\n");
+                deployResult.append("类型：从Git部署前端\n");
+                deployResult.append("服务器："+deployLog.getTarget()+"\n");
+                deployResult.append("----------------\n");
                 //在本机运行shell进行打包
                 for (int i = 0; i < deployList.length; i++) {
-                    deployResult.append("【"+(i+1)+"】"+deployList[i].getRepo()+":"
-                            +deployList[i].getBranch()+":"+deployList[i].getFilename()+"\n");
+                    String basicInfo = deployList[i].getRepo()+"/";
+                    basicInfo += deployList[i].getBranch()+"/";
+                    basicInfo += deployList[i].getScript()+"/";
+                    basicInfo += deployList[i].getFilename()+"\n";
+                    deployResult.append(basicInfo);
                     String buildInfo = buildFrontend(localRunner, deployList[i].getRepo(), deployList[i].getBranch(),
                             deployList[i].getScript(), frontendPath, deployList[i].getFilename());
-                    deployResult.append("打包结果：" + buildInfo + "\n");
+                    deployResult.append("结果：" + buildInfo + "\n");
                 }
                 //打包完成，不需要在本地再执行shell，退出这层远程登录，并登录远程和服务器
                 localRunner.runCommand("rm -f BuildFrontend.sh");
@@ -304,7 +309,7 @@ public class BuildAppService {
                     String runningPath = propertyService.getValueByType(serverInfoList,Constant.PropertyType.RUN_PATH);
                     args += (" "+runningPath);
                 } catch (MyException defaultTomcat) {
-                    logger.info("使用Tomcat进程指定的路径:"+defaultTomcat.getMessage());
+                    logger.info("使用Tomcat进程指定的路径打包");
                 }
                 if (remoteRunner.runCommand("sh DeployFrontend.sh"+args)) {
                     deployResult.append("部署成功 ");
