@@ -25,6 +25,9 @@ public class LoginAuth {
     @Value("${token.config.expiresMinutes}")
     int expiresMinutes;
 
+    @Value("${local.path.user}")
+    String userPath;
+
     @Autowired
     HttpServletRequest request;
 
@@ -92,5 +95,15 @@ public class LoginAuth {
 
     public String getUsername() {
         return getUser(request.getHeader(Constant.RequestArg.Auth));
+    }
+
+    public String getUserResourcePath(String suffix) {
+        String userResPath = getUserResourcePath() + suffix + "/";
+        return userResPath;
+    }
+
+    public String getUserResourcePath() {
+        String userResPath = userPath + "/" + getUsername() + "/";
+        return userResPath;
     }
 }

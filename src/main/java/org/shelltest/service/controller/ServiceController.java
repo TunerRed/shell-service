@@ -51,8 +51,6 @@ public class ServiceController {
     String localPassword;
     @Value("${local.path.git}")
     String localGitPath;
-    @Value("${local.path.user}")
-    String userPath;
 
     @Autowired
     HttpServletRequest request;
@@ -217,7 +215,7 @@ public class ServiceController {
         // todo 要有一个策略去清理这些文件
         ShellRunner localRunner = new ShellRunner(localURL, localUsername, localPassword);
         localRunner.login();
-        String downloadPath = userPath+"/"+loginAuth.getUsername()+"/download/";
+        String downloadPath = loginAuth.getUserResourcePath("download");
         localRunner.runCommand("mkdir -p "+downloadPath);
         localRunner.exit();
 
@@ -282,7 +280,7 @@ public class ServiceController {
         //登录本地服务器，上传脚本至本地目录(复用，不然还需要写在本地执行脚本的代码。可能会有性能问题)
         ShellRunner localRunner = new ShellRunner(localURL,localUsername,localPassword);
         localRunner.login();
-        String servicePath = userPath+"/"+loginAuth.getUsername()+"/service/";
+        String servicePath = loginAuth.getUserResourcePath("service");
         localRunner.runCommand("rm -r "+servicePath);
         localRunner.runCommand("mkdir -p "+servicePath);
         uploadService.uploadScript(localRunner, "BuildService.sh", "service");
@@ -298,7 +296,7 @@ public class ServiceController {
         // 上传脚本，顺便也提前测试下空间有没有满
         uploadService.uploadScript(remoteRunner, "DeployService.sh", "service");
         uploadService.uploadScript(remoteRunner, "StartService.sh", "service");
-        buildAppService.deployService(remoteRunner, userPath+"/"+loginAuth.getUsername()+"/upload/",
+        buildAppService.deployService(remoteRunner, loginAuth.getUserResourcePath("upload"),
                 propertyService.getValueByType(serverInfoList, Constant.PropertyType.DEPLOY_PATH),
                 propertyService.getValueByType(serverInfoList, Constant.PropertyType.BACKUP_PATH),
                 propertyService.getValueByType(serverInfoList, Constant.PropertyType.RUN_PATH),
@@ -312,7 +310,7 @@ public class ServiceController {
         ShellRunner shellRunner = new ShellRunner(localURL, localUsername, localPassword);
         shellRunner.login();
         // 清除jar目录下以往的jar包
-        String uploadPath = userPath+"/"+loginAuth.getUsername()+"/upload/";
+        String uploadPath = loginAuth.getUserResourcePath("upload");
         shellRunner.runCommand("rm -r "+uploadPath);
         shellRunner.runCommand("mkdir -p "+uploadPath);
         shellRunner.exit();
@@ -332,7 +330,7 @@ public class ServiceController {
         String filename = "";
         try {
             // 清除jar目录下以往的jar包
-            String uploadPath = userPath+"/"+loginAuth.getUsername()+"/upload/";
+            String uploadPath = loginAuth.getUserResourcePath("upload");
             List<String> prefixList = propertyService.getAppPrefixList();
             List<String> suffixList = propertyService.getAppSuffixList();
             filename = otherUtil.getRename(file.getOriginalFilename(), prefixList, suffixList)+".jar";
@@ -356,7 +354,7 @@ public class ServiceController {
     }
 
     /**
-     * 上传文件.
+     * 已弃用的.
      * 上传jar包
      * @param files 要上传的jar包文件数组
      * */
@@ -371,7 +369,7 @@ public class ServiceController {
             ShellRunner shellRunner = new ShellRunner(localURL, localUsername, localPassword);
             shellRunner.login();
             // 清除jar目录下以往的jar包
-            String path = userPath + "/" + loginAuth.getUsername() + "/upload/";
+            String path = loginAuth.getUserResourcePath("upload");
             shellRunner.runCommand("mkdir -p " + path);
             List<String> prefixList = propertyService.getAppPrefixList();
             List<String> suffixList = propertyService.getAppSuffixList();

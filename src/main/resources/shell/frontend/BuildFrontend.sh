@@ -63,12 +63,13 @@ then
 fi
 rm -rf build.log
 
-mkdir -p $BUILD_app_name
-rm -rf $BUILD_app_name
-
 mv dist $BUILD_app_name
+if [[ ! -d $BUILD_app_name ]]; then
+  echo_error "No resource folder found: $BUILD_app_name"
+  exit 1
+fi
 tar -czf $BUILD_app_name.tar.gz $BUILD_app_name/*
 
-rm -rf $BUILD_app_name
+rm -r $BUILD_app_name
 mkdir -p $TAR_path
 mv $BUILD_app_name.tar.gz $TAR_path

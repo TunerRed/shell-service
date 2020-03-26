@@ -10,9 +10,9 @@
     </parent>
     <groupId>org.shell</groupId>
     <artifactId>shell-service</artifactId>
-    <version>1.2</version>
+    <version>1.3.0</version>
     <name>service</name>
-    <description>start linux shell test</description>
+    <description>start linux shell</description>
 
     <properties>
         <java.version>1.8</java.version>

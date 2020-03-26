@@ -14,6 +14,10 @@ import org.shelltest.service.services.*;
 import org.shelltest.service.utils.*;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.core.io.FileSystemResource;
+import org.springframework.core.io.InputStreamResource;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.*;
 
 import org.slf4j.Logger;
@@ -21,6 +25,10 @@ import org.slf4j.LoggerFactory;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.validation.Valid;
+import java.io.File;
+import java.io.IOException;
+import java.io.UnsupportedEncodingException;
+import java.net.URLEncoder;
 import java.util.ArrayList;
 import java.util.LinkedList;
 import java.util.List;
@@ -55,8 +63,6 @@ public class FrontendController {
     String localPassword;
     @Value("${local.path.git}")
     String localGitPath;
-    @Value("${local.path.user}")
-    String userPath;
 
     private Logger logger = LoggerFactory.getLogger(this.getClass());
 
@@ -193,7 +199,7 @@ public class FrontendController {
         //登录本地服务器，上传脚本至本地目录(复用，不然还需要写在本地执行脚本的代码。可能会有性能问题)
         ShellRunner localRunner = new ShellRunner(localURL,localUsername,localPassword);
         localRunner.login();
-        String frontendPath = userPath+"/"+loginAuth.getUsername()+"/frontend/";
+        String frontendPath = loginAuth.getUserResourcePath("frontend");
         localRunner.runCommand("rm -r "+frontendPath);
         localRunner.runCommand("mkdir -p "+frontendPath);
         uploadService.uploadScript(localRunner, "BuildFrontend.sh", "frontend");
@@ -221,5 +227,62 @@ public class FrontendController {
         remoteRunner.runCommand("rm -f RollbackFrontend.sh");
         remoteRunner.exit();
         return new ResponseBuilder().getResponseEntity();
+    }
+
+    @GetMapping("/userResource")
+    public ResponseEntity getUserResource() throws MyException {
+        String resourcePath = loginAuth.getUserResourcePath("frontend");
+        LinkedList<String> list = null;
+//        list = new LinkedList<>();
+//        list.add("abc.tar.gz");
+//        list.add("cde.tar.gz");
+        ShellRunner localRunner = new ShellRunner(localURL, localUsername, localPassword);
+        localRunner.login();
+        localRunner.runCommand("mkdir -p " + resourcePath);
+        if (localRunner.runCommand("ls " + resourcePath + "|egrep .*.tar.gz$")) {
+            list = localRunner.getResult();
+        } else {
+            localRunner.exit();
+            throw new MyException(Constant.ResultCode.NOT_FOUND, "找不到资源路径/资源" + localRunner.getError());
+        }
+        localRunner.exit();
+        return new ResponseBuilder().setData(list).getResponseEntity();
+    }
+
+    /**
+     * 下载服务包.
+     * @param filename 运行路径下的文件
+     * @return 下载文件
+     * */
+    @GetMapping("/download")
+    public org.springframework.http.ResponseEntity downloadFrontend(@NotNull@Param("filename")String filename) throws MyException {
+        Long len = null;
+        InputStreamResource res = null;
+        HttpHeaders headers = new HttpHeaders();
+        filename = filename.substring(filename.lastIndexOf('/') + 1);
+        String downloadPath = loginAuth.getUserResourcePath("frontend");
+        File file = new File(downloadPath + filename);
+        logger.debug(file.getPath()+" "+file.exists());
+        if (!file.exists() || !file.canRead()) {
+            throw new MyException(Constant.ResultCode.NOT_FOUND, "不可读取的服务器文件");
+        } else {
+            try {
+                headers.add("Cache-Control","no-cache,no-store,must-revalidate");
+                headers.add("Pragma", "no-cache");
+                headers.add("Expires", "0");
+                headers.add("Content-Disposition", "attachment;filename=" + URLEncoder.encode(file.getName(), "UTF-8"));
+                FileSystemResource f = new FileSystemResource(file);
+                res = new InputStreamResource(f.getInputStream());
+                len = f.contentLength();
+            } catch (UnsupportedEncodingException e) {
+                logger.error("文件名编码转换错误 "+e.getMessage());
+                throw new MyException(Constant.ResultCode.ARGS_ERROR, "文件名编码转换错误 "+e.getMessage());
+            } catch (IOException e) {
+                e.printStackTrace();
+                throw new MyException(Constant.ResultCode.INTERNAL_ERROR, "文件下载错误 "+e.getMessage());
+            }
+        }
+        return org.springframework.http.ResponseEntity.ok().headers(headers).contentLength(len)
+                .contentType(MediaType.APPLICATION_OCTET_STREAM).body(res);
     }
 }
