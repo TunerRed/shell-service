@@ -54,6 +54,9 @@ then
   echo_error "Install Error"
   exit 1
 fi
+newest=`git reflog|awk 'NR==1'|awk '{print $1}'`
+git reset --hard $newest
+git pull > /dev/null 2>&1
 
 npm run $BUILD_script > build.log 2>&1
 if [ $? -ne 0 ] ;
